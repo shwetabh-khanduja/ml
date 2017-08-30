@@ -161,3 +161,6 @@ def PreparePath(path,is_file=True):
 def Get_Subdirectories(a_dir):
     return [os.path.join(a_dir, name) for name in os.listdir(a_dir)
             if os.path.isdir(os.path.join(a_dir, name))]
+
+def ConcatToStr(delimiter,values_array):
+	return delimiter.join([str(x) for x in values_array])

@@ -8,7 +8,7 @@ class DecisionTreeRunConfig:
 	testset=<path> if null -no-cv will be set and train set will be evaluated otherwise sets -T option
 	class=last sets the class column
 
-	In the constructor only numfolds,minleafsize and pruce must be passed in
+	In the constructor only numfolds,minleafsize and prune must be passed in
 	"""
 	def __init__(self, **kwargs):
 		"""

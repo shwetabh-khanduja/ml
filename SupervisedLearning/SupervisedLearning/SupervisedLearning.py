@@ -4,6 +4,7 @@ java -classpath "C:\Program Files\Weka-3-8\weka.jar" weka.classifiers.meta.Filte
 """
 
 import scipy as sc
+import numpy as np
 import pandas as pd
 import utils as u
 from sklearn.model_selection import train_test_split
@@ -11,6 +12,9 @@ import glob
 import DecisionTreeRunConfig as dtc
 import timeit
 import os
+import subprocess as sb
+import random
+from sklearn.metrics import precision_recall_fscore_support
 
 def LoadWineDataSet(root = r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\WineDataset"):
 	datafile = root+r"\wine.csv"
@@ -134,21 +138,70 @@ def GenerateVowelRecognitionDataSetSplits():
 	vowelDataFile=u.PreparePath("{0}/vowel-recongnition-dataset.csv".format(rootFolder))
 	arff_attrs_file = u.PreparePath("{0}/vowel.txt".format(rootFolder))
 	data,arff_attrs = LoadCharacterRecognitionDataset(vowelDataFile,arff_attrs_file)
-	random=0
+	r=0
 	train_size_percs = [20,30,40,50,60,70,80,90,100]
-	GenerateDatasetSplits(rootFolder,id,data,test_perc,train_perc,0,train_size_percs,"vowel",random,arff_attrs)
+	#GenerateDatasetSplits(rootFolder,id,data,test_perc,train_perc,0,train_size_percs,"vowel",random,arff_attrs)
+	imbalance_percs = [90,10,20,30,40,50,70,5,100]
+	minority_class = "v"
+	GenerateDatasetSplitsForClassImbalance(rootFolder,"imb"+str(id),data,test_perc,train_perc,0,imbalance_percs,"vowel",minority_class,500,r,arff_attrs)
 
-def GenerateCreditScreeningDataSetSplits():
-	rootFolder=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"
-	id=0
-	train_perc=80
-	test_perc=20
+def GenerateVowelRecognitionDataSetSplits(
+	rootFolder,
+	id,
+	train_perc,
+	test_perc,
+	random_state,
+	train_size_percs = None,
+	imbalance_percs = None,
+	noise_percs = None,
+	class_col_name="vowel",
+	min_minority_class_samples_to_keep=500):
+
+	vowelDataFile=u.PreparePath("{0}/vowel-recongnition-dataset.csv".format(rootFolder))
+	arff_attrs_file = u.PreparePath("{0}/vowel.txt".format(rootFolder))
+	data,arff_attrs = LoadCharacterRecognitionDataset(vowelDataFile,arff_attrs_file)
+
+	minority_class = "v"
+	flip_fn = lambda x : "c" if(x == "v") else "c"
+	if(train_size_percs is not None):
+		GenerateDatasetSplits(rootFolder,id,data,test_perc,train_perc,0,train_size_percs,class_col_name,random_state,arff_attrs)
+	if(imbalance_percs is not None):
+		GenerateDatasetSplitsForClassImbalance(rootFolder,"imb"+str(id),data,test_perc,train_perc,0,imbalance_percs,class_col_name,minority_class,min_minority_class_samples_to_keep,random_state,arff_attrs)
+	if(noise_percs is not None):
+		GenerateDatasetSplitsForWithNoise(rootFolder,"noise" + str(id),data,test_perc,train_perc,0,noise_percs,class_col_name,flip_fn,random_state,arff_attrs)
+
+def GenerateCreditScreeningDataSetSplits(
+	rootFolder,
+	id,
+	train_perc,
+	test_perc,
+	random_state,
+	train_size_percs = None,
+	imbalance_percs = None,
+	noise_percs = None,
+	class_col_name="A16",
+	min_minority_class_samples_to_keep=10,
+	train=None,
+	test=None):
+
+	#rootFolder=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"
+	#id=0
+	#train_perc=80
+	#test_perc=20
 	vowelDataFile=u.PreparePath("{0}/data_no_missing_values.csv".format(rootFolder))
 	arff_attrs_file = u.PreparePath("{0}/arff_attrs.txt".format(rootFolder))
 	data,arff_attrs = LoadCreditScreeningData(vowelDataFile,arff_attrs_file)
-	random=0
-	train_size_percs = [20,30,40,50,60,70,80,90,100]
-	GenerateDatasetSplits(rootFolder,id,data,test_perc,train_perc,0,train_size_percs,"A16",random,arff_attrs)
+	#random=0
+	#train_size_percs = [20,30,40,50,60,70,80,90,100]
+	#imbalance_percs = [90,10,20,30,40,50,70,5,100]
+	minority_class = "+"
+	flip_fn = lambda x : "-" if(x == "+") else "+"
+	if(train_size_percs is not None):
+		GenerateDatasetSplits(rootFolder,id,data,test_perc,train_perc,0,train_size_percs,class_col_name,random_state,arff_attrs)
+	if(imbalance_percs is not None):
+		GenerateDatasetSplitsForClassImbalance(rootFolder,"imb"+str(id),data,test_perc,train_perc,0,imbalance_percs,class_col_name,minority_class,min_minority_class_samples_to_keep,random_state,arff_attrs)
+	if(noise_percs is not None):
+		GenerateDatasetSplitsForWithNoise(rootFolder,"noise" + str(id),data,test_perc,train_perc,0,noise_percs,class_col_name,flip_fn,random_state,arff_attrs)
 
 def RunDecisionTrees(datasets_root_folder,use_arff_files=True):
 	file_extn = "arff" if use_arff_files else ".csv"
@@ -180,19 +233,23 @@ def RunDecisionTrees(datasets_root_folder,use_arff_files=True):
 
 			# for every config there has to be a train prediction and test prediction
 			cmd = config_gen.GenerateWekaCommandline(config)
-			config["modelbuildtimesecs"] = timeit.timeit(lambda: os.system(cmd),number=1)
+			config["modelbuildtimesecs"] = timeit.timeit(lambda: RunCmdWithoutConsoleWindow(cmd),number=1)
 			
 			# now for test set
 			config["predictionoutputfile"] = test_output_file
 			config["testset"] = testfiles[0]
 			cmd = config_gen.GenerateWekaCommandline(config)
-			config["modelevaltimesecs"] = timeit.timeit(lambda : os.system(cmd),number=1)
+			config["modelevaltimesecs"] = timeit.timeit(lambda : RunCmdWithoutConsoleWindow(cmd),number=1)
 
 			for k in config:
 				params_info.append("{0}={1}".format(k,config[k]))
 			u.WriteTextArrayToFile(params_output_file,params_info)
 			config = config_gen.GetNextConfigAlongWithIdentifier()
 		print("done dataset : " + dataset_dir)
+
+def RunCmdWithoutConsoleWindow(cmd):
+	CREATE_NO_WINDOW = 0x08000000
+	sb.call(cmd, creationflags=CREATE_NO_WINDOW)
 
 def LoadCreditScreeningData(file,arff_attr_file=None):
 	data = pd.read_csv(file)
@@ -201,9 +258,237 @@ def LoadCreditScreeningData(file,arff_attr_file=None):
 		return data,arff_attrs
 	return data,None
 
+def MaintainRatio(minority_class_num, majority_class_num, ratio_to_maintain, min_minority_to_keep):
+	"""
+	Makes the ratio of minorities / majorities = ratio
+	To do this, first tries to remove the minority samples
+	while keep a min number of them. Then removes samples 
+	from majority to get the ratio
+	"""
+	minority_samples_to_keep = ratio_to_maintain * majority_class_num
+	remove_majority=False
+	majority_to_remove = 0
+	if((min_minority_to_keep > minority_samples_to_keep) | (minority_samples_to_keep > minority_class_num)):
+		minority_samples_to_keep = minority_class_num
+		majority_to_keep = minority_samples_to_keep / ratio_to_maintain
+		majority_to_remove = majority_class_num - majority_to_keep
+		if(majority_to_keep <= 0):
+		    raise Exception("cannot maintain the ratio") 
+	minority_to_remove = minority_class_num - minority_samples_to_keep
+	print("required : {0} current : {1} total_min : {2} total_maj : {3}".format(ratio_to_maintain,minority_samples_to_keep / (majority_class_num - majority_to_remove),minority_samples_to_keep,(majority_class_num - majority_to_remove)))
+	return [int(minority_to_remove),int(majority_to_remove)]
+
+def GenerateDatasetSplitsForClassImbalance(
+	rootFolder,
+	dataset_folder_prefix,
+	dataset,
+	test_ratio,
+	train_ratio,
+	validation_ratio,
+	imbalance_percentages,
+	class_col,
+	minority_label,
+	min_minority_to_keep,
+	random_state,
+	arff_attr_info=None,
+	train_set=None,
+	test_set=None):
+	"""
+	train_size_percentages is a list of intergers specifying the
+	percent of train set to be taken while preparing the dataset
+
+	test_ratio,train_ratio,validation_ratio : numbers in percentages
+	"""
+	dataset_root = u.PreparePath("{0}/i-{1}_t-{2}_T-{3}".format(rootFolder,dataset_folder_prefix,train_ratio,test_ratio))
+	if((train_set is not None) & (test_set is not None)):
+		train = train_set
+		test = test_set
+	else:
+		train,test,validation = CreateTrainTestAndValidationPartitions(dataset,class_col,train_ratio/100,test_ratio/100,random_state,validation_ratio/100)
+	test_output_file_csv = u.PreparePath("{0}/i-{1}.test.csv".format(dataset_root,dataset_folder_prefix))
+	test.to_csv(test_output_file_csv,index=False)
+	if(arff_attr_info is not None):
+		test_output_file_arff = u.PreparePath("{0}/i-{1}.test.arff".format(dataset_root,dataset_folder_prefix))
+		CreateArffFileFromCsv(arff_attr_info,test_output_file_arff,test_output_file_csv,True,True)
+
+	# now creating the train set partitions
+	for imbalance_perc in imbalance_percentages:
+		folder_path = u.PreparePath("{0}/i-{1}_t-{2}_im-{3}".format(dataset_root,dataset_folder_prefix,train_ratio,imbalance_perc))
+		csv_output_file = u.PreparePath("{0}/i-{1}_t-{2}_im-{3}.train.csv".format(folder_path,dataset_folder_prefix,train_ratio,imbalance_perc))
+		imbalance_dataset = CreateImbalancedDataSet(train,class_col,minority_label,imbalance_perc/100,min_minority_to_keep,random_state)
+		imbalance_dataset.to_csv(csv_output_file,index=False)
+		print("done imb : " + str(imbalance_perc))
+		if(arff_attr_info is not None):
+			arff_output_file = u.PreparePath("{0}/i-{1}_t-{2}_im-{3}.train.arff".format(folder_path,dataset_folder_prefix,train_ratio,imbalance_perc))
+			CreateArffFileFromCsv(arff_attr_info,arff_output_file,csv_output_file,True,True)
+		
+		# writing the parameters
+		params_info = ["dataset_instance={0}".format(dataset_folder_prefix),
+						"test_split={0}".format(test_ratio),
+						"train_split={0}".format(train_ratio),
+						"random_state={0}".format(random_state),
+						"class_col={0}".format(class_col),
+						"minority_label={0}".format(minority_label),
+						"imbalance_perc={0}".format(imbalance_perc)]
+		params_out_file = u.PreparePath("{0}/i-{1}_t-{2}_im-{3}.params.txt".format(folder_path,dataset_folder_prefix,train_ratio,imbalance_perc))
+		u.WriteTextArrayToFile(params_out_file,params_info)
+
+def GenerateDatasetSplitsForWithNoise(
+	rootFolder,
+	dataset_folder_prefix,
+	dataset,
+	test_ratio,
+	train_ratio,
+	validation_ratio,
+	noise_percentages,
+	class_col,
+	flip_fn,
+	random_state,
+	arff_attr_info=None):
+	"""
+	train_size_percentages is a list of intergers specifying the
+	percent of train set to be taken while preparing the dataset
+
+	test_ratio,train_ratio,validation_ratio : numbers in percentages
+	"""
+	dataset_root = u.PreparePath("{0}/i-{1}_t-{2}_T-{3}".format(rootFolder,dataset_folder_prefix,train_ratio,test_ratio))
+	train,test,validation = CreateTrainTestAndValidationPartitions(dataset,class_col,train_ratio/100,test_ratio/100,random_state,validation_ratio/100)
+	test_output_file_csv = u.PreparePath("{0}/i-{1}.test.csv".format(dataset_root,dataset_folder_prefix))
+	test.to_csv(test_output_file_csv,index=False)
+	if(arff_attr_info is not None):
+		test_output_file_arff = u.PreparePath("{0}/i-{1}.test.arff".format(dataset_root,dataset_folder_prefix))
+		CreateArffFileFromCsv(arff_attr_info,test_output_file_arff,test_output_file_csv,True,True)
+
+	# now creating the train set partitions
+	for noise_perc in noise_percentages:
+		folder_path = u.PreparePath("{0}/i-{1}_t-{2}_noise-{3}".format(dataset_root,dataset_folder_prefix,train_ratio,noise_perc))
+		csv_output_file = u.PreparePath("{0}/i-{1}_t-{2}_noise-{3}.train.csv".format(folder_path,dataset_folder_prefix,train_ratio,noise_perc))
+		
+		noisy_dataset = CreateNoisyDataset(train,class_col,noise_perc/100,random_state,flip_fn)
+		noisy_dataset.to_csv(csv_output_file,index=False)
+		
+		print("done noisy : " + str(noise_perc))
+		if(arff_attr_info is not None):
+			arff_output_file = u.PreparePath("{0}/i-{1}_t-{2}_noise-{3}.train.arff".format(folder_path,dataset_folder_prefix,train_ratio,noise_perc))
+			CreateArffFileFromCsv(arff_attr_info,arff_output_file,csv_output_file,True,True)
+		
+		# writing the parameters
+		params_info = ["dataset_instance={0}".format(dataset_folder_prefix),
+						"test_split={0}".format(test_ratio),
+						"train_split={0}".format(train_ratio),
+						"random_state={0}".format(random_state),
+						"class_col={0}".format(class_col),
+						"noise_perc={0}".format(noise_perc)]
+		params_out_file = u.PreparePath("{0}/i-{1}_t-{2}_noise-{3}.params.txt".format(folder_path,dataset_folder_prefix,train_ratio,noise_perc))
+		u.WriteTextArrayToFile(params_out_file,params_info)
+
+def CreateImbalancedDataSet(data,class_col,minority_label,ratio,min_minority_to_keep,seed):
+	total_minority_labels = (data[class_col] == minority_label).sum()
+	total_majority_labels = len(data) - total_minority_labels
+	remove_min,remove_maj = MaintainRatio(total_minority_labels,total_majority_labels,ratio,min_minority_to_keep)
+	new_minority_instances = data[data[class_col] == minority_label]
+	new_majority_instances = data[data[class_col] != minority_label]
+	
+	random.seed(seed)
+	new_minority_instances = new_minority_instances.sample(n = len(new_minority_instances) - remove_min)
+	new_majority_instances = new_majority_instances.sample(n = len(new_majority_instances) - remove_maj)
+
+	return pd.concat([new_majority_instances,new_minority_instances]).sample(frac=1)
+
+def CreateNoisyDataset(data,class_col,flip_frac,rand,flip_fn):
+	random.seed(rand)
+	rows_to_flip_idx = random.sample(range(len(data)),int(flip_frac * len(data)))
+	assert(len(rows_to_flip_idx) == len(set(rows_to_flip_idx)))
+	values = data[class_col].values
+	for idx in rows_to_flip_idx:
+		values[idx] = flip_fn(values[idx])
+	data[class_col] = values
+	return data
+
+def EvaluateDecisionTrees(datasets_root_folder,params_to_keep,positive_class,evaluation_output_filename="performance.csv"):
+	headers=[]
+	headers.extend(params_to_keep)
+	headers.extend(['istrain','p','r','f'])
+	headers = ",".join(headers)
+	evals = []
+	evals.append(headers)
+	for directory in u.Get_Subdirectories(datasets_root_folder):
+		#each directory is a dataset directory
+		dt_output_dir = "{0}/dt".format(directory)
+		for run_output_folder in u.Get_Subdirectories(dt_output_dir):
+			#read params file
+			params_file_path = glob.glob("{0}/*.params.txt".format(run_output_folder))[0]
+			params = GetDictionary(u.ReadLinesFromFile(params_file_path))
+			values = []
+			for k in params_to_keep:
+				if(k in params):
+					values.append(str(params[k]))
+				else:
+					values.append(str(np.NaN))
+			p,r,f=GetPrecisionRecallForWekaOutputFile(params["trainpredictionoutputfile"],positive_class)
+			train_performance_values = ",".join(values)
+			train_performance_values = "{0},1,{1},{2},{3}".format(",".join(values),str(p),str(r),str(f))
+			p,r,f=GetPrecisionRecallForWekaOutputFile(params["testpredictionoutputfile"],positive_class)
+			test_performance_values = ",".join(values)
+			test_performance_values = "{0},0,{1},{2},{3}".format(",".join(values),str(p),str(r),str(f))
+			evals.append(train_performance_values)
+			evals.append(test_performance_values)
+	u.WriteTextArrayToFile(u.PreparePath("{0}/{1}".format(datasets_root_folder,evaluation_output_filename)),evals)
+
+def GetPrecisionRecallForWekaOutputFile(file,positive_class_label):
+	results = pd.read_csv(file)
+	actual = results['actual'].map(lambda x : 1 if(x.split(':')[1] == positive_class_label) else 0)
+	predicted = results['predicted'].map(lambda x : 1 if(x.split(':')[1] == positive_class_label) else 0)
+	p,r,f,s = precision_recall_fscore_support(actual,predicted,average='binary')
+	return [p,r,f]
+
+def ComputePrecisionRecallForPythonOutputFormat(file,positive_class_label):
+	results = pd.read_csv(file)
+	p,r,f,s = precision_recall_fscore_support(results['actual'],results['predicted'],average='binary')
+	return [p,r,f]
+
+def GetDictionary(lines_array):
+	d = {}
+	for line in lines_array:
+		tokens = line.split("=")
+		d[tokens[0]] = tokens[1]
+	return d
+
+def GetOneHotEncodingForDataFrame(dataframe,columns_to_encode):
+	for col in columns_to_encode:
+		enc = pd.get_dummies(dataframe[col],prefix=col)
+		dataframe = dataframe.drop(col,axis=1)
+		dataframe=dataframe.join(enc)
+	return dataframe
+
+def ConvertLabelsToZeroOne(data, positive_class_label):
+	labels_raw = np.array(data)
+	labels_raw[labels_raw == positive_class_label] = 1
+	labels_raw[labels_raw != 1] = 0
+	return labels_raw.astype(int)
+
 if __name__=="__main__":
-	GenerateCreditScreeningDataSetSplits()
-	RunDecisionTrees(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition\i-0_t-80_T-20")
+
+	root = r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets"
+	letter_recognition_dataset_root = root+"/LetterRecognition"
+	credit_screening_dataset_root = root+"/CreditScreeningDataSet"
+	noise_percs = [0,10,15,20,25,30,50,70]
+	train_perc = 80
+	test_perc = 20
+	r = 1
+
+	GenerateCreditScreeningDataSetSplits(credit_screening_dataset_root,r,train_perc,test_perc,r,noise_percs=noise_percs)
+	GenerateVowelRecognitionDataSetSplits(letter_recognition_dataset_root,r,train_perc,test_perc,r,noise_percs=noise_percs)
+	r=2
+	GenerateCreditScreeningDataSetSplits(credit_screening_dataset_root,r,train_perc,test_perc,r,noise_percs=noise_percs)
+	GenerateVowelRecognitionDataSetSplits(letter_recognition_dataset_root,r,train_perc,test_perc,r,noise_percs=noise_percs)
+
+	#EvaluateDecisionTrees(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset\i-imb0_t-80_T-20",['dataset_instance','test_split','train_split','random_state','imbalance_perc','prune','modelbuildtimesecs'],'+')
+	#EvaluateDecisionTrees(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset\i-0_t-80_T-20",['dataset_instance','test_split','train_split','random_state','train_split_percent_used','prune','modelbuildtimesecs'],'+')
+	EvaluateDecisionTrees(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition\i-0_t-80_T-20",['dataset_instance','test_split','train_split','random_state','train_split_percent_used','prune','modelbuildtimesecs'],'v')
+	a = GetPrecisionRecallForWekaOutputFile(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition\i-imb0_t-80_T-20\i-imb0_t-80_im-5\dt\prune-False_numfolds-0_minleafsize-2\prune-True_numfolds-0_minleafsize-2.test.predictions.csv",'v')
+	#GenerateCreditScreeningDataSetSplits()
+	#RunDecisionTrees(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition\i-0_t-80_T-20")
 	GenerateVowelRecognitionDataSetSplits()
 	dataset_root = r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\WineDataset"
 	data = LoadWineDataSet(dataset_root)

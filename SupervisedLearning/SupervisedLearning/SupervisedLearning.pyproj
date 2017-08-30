@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>60429092-0e9d-44b6-8f5e-e1e0b856ff3f</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>SupervisedLearning.py</StartupFile>
+    <StartupFile>NeuralNetwork.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -22,7 +22,19 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DatasetCreation.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DecisionTree.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="DecisionTreeRunConfig.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="NeuralNetwork.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="NeuralNetworkRunConfig.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="SupervisedLearning.py" />
