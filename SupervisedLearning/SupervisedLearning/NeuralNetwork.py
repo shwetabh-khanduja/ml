@@ -10,6 +10,7 @@ import utils as u
 import time
 import DecisionTree as dt
 import os
+from sklearn.preprocessing import StandardScaler
 
 def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, positive_class_label=None):
 	file_extn = "csv"
@@ -24,6 +25,7 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 		while(config is not None):
 			id = config["id"]
 			params_info = u.ReadLinesFromFile(paramfile)
+			params_info_dict=sl.GetDictionary(params_info)
 			run_output_dir = u.PreparePath("{0}/{1}".format(dt_root,id),is_file=False)
 			params_output_file=u.PreparePath("{0}/{1}.params.txt".format(run_output_dir,id))
 			model_output_file=u.PreparePath("{0}/{1}.model".format(run_output_dir,id))
@@ -43,6 +45,15 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 			config["testset"] = testfiles[0]
 			testdata = pd.read_csv(config["testset"])
 			train_len = len(data)
+
+			cols_to_ignore = set(one_hot_encoding_cols) if one_hot_encoding_cols is not None else set([])
+			cols_to_ignore.add(data.columns[-1])
+			cols_to_transform = [c for c in data.columns if c not in cols_to_ignore]
+			scaler = StandardScaler()
+			scaler.fit(data[cols_to_transform])
+			data[cols_to_transform] = scaler.transform(data[cols_to_transform])
+			testdata[cols_to_transform] = scaler.transform(testdata[cols_to_transform])
+
 			all_data = pd.concat([data,testdata], axis=0, ignore_index=True)
 			X_all,Y_all = PrepareDataAndLabel(all_data,positive_class_label,one_hot_encoding_cols)
 			X = X_all[0:train_len,:]
@@ -57,7 +68,7 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 			max_iter = 200
 			early_stopping = config["earlystopping"]
 			validation_fraction=0.3
-			random_state = np.random.randint(0,1000)
+			random_state = int(params_info_dict["random_state"])
 			solver='sgd'
 
 			#for doing 3-fold CV
@@ -71,7 +82,7 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 				random_state=random_state,
 				solver="sgd",
 				max_iter=max_iter)
-			gscv = GridSearchCV(classifier,param_grid,n_jobs=2)
+			gscv = GridSearchCV(classifier,param_grid,n_jobs=3)
 			gscv.fit(X,Y)
 
 			classifier = MLPClassifier(
@@ -102,7 +113,7 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 			config["loss_curve"] = u.ConcatToStr(";",classifier.loss_curve_)
 
 			config["random_state"] = random_state
-			config["modelbuildtimesecs"] = 0
+			config["modelbuildtimesecs"] = end-start
 			# for train performance
 			config["trainpredictionoutputfile"]=train_output_file
 			train_predicted_Y = classifier.predict(X)
@@ -139,7 +150,7 @@ def NeuralNetExperiments():
 def RunNeuralNetsOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition"):
 	pos_class="v"
 	metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
-	keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','prune','modelbuildtimesecs','earlystopping','alphas','init_learning_rates','total_iter','time_per_iter','best_alpha','best_init_learning_rate','loss_curve','momentum','best_hidden_layer_sizes','hidden_layers']
+	keys_to_keep=['dataset_instance','test_split','train_split','noise_perc','train_split_percent_used','imbalance_perc','prune','modelbuildtimesecs','earlystopping','alphas','init_learning_rates','total_iter','time_per_iter','best_alpha','best_init_learning_rate','loss_curve','momentum','best_hidden_layer_sizes','hidden_layers']
 	classifier_fn = lambda x : RunNeuralNetClassifier(x,positive_class_label=pos_class)
 	id="nnet_1_all"
 	algo_folder='nnets'
@@ -149,7 +160,7 @@ def RunNeuralNetsOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\Gat
 def RunNeuralNetsOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"):
 	pos_class="+"
 	metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
-	keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','prune','modelbuildtimesecs','earlystopping','alphas','init_learning_rates','total_iter','time_per_iter','best_alpha','best_init_learning_rate','loss_curve','momentum','best_hidden_layer_sizes','hidden_layers']
+	keys_to_keep=['dataset_instance','test_split','train_split','noise_perc','train_split_percent_used','imbalance_perc','prune','modelbuildtimesecs','earlystopping','alphas','init_learning_rates','total_iter','time_per_iter','best_alpha','best_init_learning_rate','loss_curve','momentum','best_hidden_layer_sizes','hidden_layers']
 	classifier_fn = lambda x : RunNeuralNetClassifier(x,positive_class_label=pos_class,one_hot_encoding_cols=['A1','A4','A5','A6','A7','A9','A10','A12','A13'])
 	id="nnet_1_all"
 	algo_folder='nnets'
@@ -157,6 +168,6 @@ def RunNeuralNetsOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gate
 	dt.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
 
 if __name__ == "__main__":
-	RunNeuralNetsOnVowelRecognitionDataset()
+	#RunNeuralNetsOnVowelRecognitionDataset()
 	RunNeuralNetsOnCreditScreeningDataset()
 	
