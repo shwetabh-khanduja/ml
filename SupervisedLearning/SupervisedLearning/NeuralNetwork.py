@@ -169,5 +169,5 @@ def RunNeuralNetsOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gate
 
 if __name__ == "__main__":
 	#RunNeuralNetsOnVowelRecognitionDataset()
-	RunNeuralNetsOnCreditScreeningDataset()
+	RunNeuralNetsOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
 	
