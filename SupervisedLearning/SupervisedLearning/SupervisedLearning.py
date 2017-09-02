@@ -244,7 +244,7 @@ def RunDecisionTrees(datasets_root_folder,use_arff_files=True):
 
 def RunCmdWithoutConsoleWindow(cmd):
 	CREATE_NO_WINDOW = 0x08000000
-	sb.call(cmd, creationflags=CREATE_NO_WINDOW)
+	return sb.call(cmd, creationflags=CREATE_NO_WINDOW, shell=True)
 
 def LoadCreditScreeningData(file,arff_attr_file=None):
 	data = pd.read_csv(file)

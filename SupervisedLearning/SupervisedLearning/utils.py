@@ -1,6 +1,6 @@
-import numpy as np;
-import matplotlib.pyplot as plt;
-import os;
+import numpy as np
+import matplotlib.pyplot as plt
+import os
 
 def WriteTextToFile(file,text):
     f = open(file,'w')

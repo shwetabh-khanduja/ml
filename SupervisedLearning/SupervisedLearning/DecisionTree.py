@@ -11,6 +11,7 @@ from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
 
 import DecisionTreeRunConfig as dtc
+import ExperimentsRunner as exp
 import SupervisedLearning as sl
 import utils as u
 
@@ -53,6 +54,7 @@ def RunDecisionTrees(datasets_root_folder, weka_jar_path="C:\Program Files\Weka-
 
             # for every config there has to be a train prediction and test prediction
             cmd = config_gen.GenerateWekaCommandline(config)
+            print(cmd)
             config["modelbuildtimesecs"] = timeit.timeit(
                 lambda: sl.RunCmdWithoutConsoleWindow(cmd), number=1)
 
@@ -245,7 +247,7 @@ def RunDecisionTreesOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\G
     id = "credit.dt_2_all"
     algo_folder = 'dt'
     force_computation = True
-    RunNEvaluateExperimentsOnDataSet(
+    exp.RunNEvaluateExperimentsOnDataSet(
         classifier_fn, root, id, metric_fn, algo_folder, keys_to_keep, pos_class, [], force_computation)
 
 
@@ -259,7 +261,7 @@ def RunDecisionTreesOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\
     id = "vowel.dt_1_all"
     algo_folder = 'dt'
     force_computation = True
-    RunNEvaluateExperimentsOnDataSet(
+    exp.RunNEvaluateExperimentsOnDataSet(
         classifier_fn, root, id, metric_fn, algo_folder, keys_to_keep, pos_class, [], force_computation)
 
 

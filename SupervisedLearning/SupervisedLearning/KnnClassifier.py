@@ -8,10 +8,10 @@ from sklearn.model_selection import GridSearchCV, ParameterGrid
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 
-import DecisionTree as dt
+import ExperimentsRunner as exp
 import SupervisedLearning as sl
 import utils as u
-
+import NeuralNetwork as nnet
 
 def GetIdForConfig(config):
     return "weights-{0}_neighbors-{1}".format(config['weights'], config['neighbors'])
@@ -64,7 +64,7 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
             testdata[cols_to_transform] = scaler.transform(testdata[cols_to_transform])
 
             all_data = pd.concat([data, testdata], axis=0, ignore_index=True)
-            X_all, Y_all = PrepareDataAndLabel(
+            X_all, Y_all = nnet.PrepareDataAndLabel(
                 all_data, positive_class_label, nominal_value_columns)
             X = X_all[0:train_len, :]
             Y = Y_all[0:train_len]
@@ -75,10 +75,10 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
                 classifier = KNeighborsClassifier(config['neighbors'],config['weights'])
             else:
                 classifier = KNeighborsClassifier(config['neighbors'],config['weights'],algorithm='auto',metric='pyfunc',metric_params={'func': metric_fn})
-            start = time.clock();
+            start = time.clock()
             classifier.fit(X,Y)
-            end = time.clock();
-
+            end = time.clock()
+            print(end-start)
             config["modelbuildtimesecs"] = end-start
             # for train performance
             config["trainpredictionoutputfile"]=train_output_file
@@ -133,20 +133,21 @@ def RunKnnClassifierOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\
     id="vowel.knn_1_all"
     algo_folder='knn'
     force_computation=True
-    dt.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
+    exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
 
 def RunKnnClassifierOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"):
 	pos_class="+"
 	metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
 	keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','weights','neighbors','modelbuildtimesecs','modelevaltimesecs']
-	classifier_fn = lambda x : RunKNNClassifier(x,['A1','A4','A5','A6','A7','A9','A10','A12','A13'],pos_class,DistanceFuncForCreditScreeningDataset)
+	classifier_fn = lambda x : RunKNNClassifier(x,['A1','A4','A5','A6','A7','A9','A10','A12','A13'],pos_class)
 	id="credit.knn_1_all"
 	algo_folder='knn'
 	force_computation=True
-	dt.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
+	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
 
 def main():
-    RunKnnClassifierOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
+    RunKnnClassifierOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
+    # RunKnnClassifierOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
 
 if __name__ == '__main__':
     main()

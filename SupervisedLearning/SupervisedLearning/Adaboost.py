@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import ParameterGrid
 
-import DecisionTree as dt
+import ExperimentsRunner as exp
 import SupervisedLearning as sl
 import utils as u
 
@@ -82,7 +82,7 @@ def RunAdaBoostOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\Gatec
 	id="vowel.ada_1_all"
 	algo_folder='ada'
 	force_computation=True
-	dt.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
+	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
 
 def RunAdaBoostOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset",weka_jar_path="C:\Program Files\Weka-3-8\weka.jar"):
 	pos_class="+"
@@ -92,7 +92,7 @@ def RunAdaBoostOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech
 	id="credit.ada_1_all"
 	algo_folder='ada'
 	force_computation=True
-	dt.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
+	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
 
 def main():
     RunAdaBoostOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")

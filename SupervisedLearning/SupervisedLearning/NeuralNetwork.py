@@ -8,7 +8,7 @@ from sklearn.model_selection import GridSearchCV, ParameterGrid
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 
-import DecisionTree as dt
+import ExperimentsRunner as exp
 import SupervisedLearning as sl
 import utils as u
 from NeuralNetworkRunConfig import NeuralNetworkRunConfig as nnconfig
@@ -158,7 +158,7 @@ def RunNeuralNetsOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\Gat
 	id="nnet_1_all"
 	algo_folder='nnets'
 	force_computation=True
-	dt.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
+	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
 
 def RunNeuralNetsOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"):
 	pos_class="+"
@@ -168,7 +168,7 @@ def RunNeuralNetsOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gate
 	id="nnet_1_all"
 	algo_folder='nnets'
 	force_computation=True
-	dt.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
+	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
 
 if __name__ == "__main__":
 	#RunNeuralNetsOnVowelRecognitionDataset()
