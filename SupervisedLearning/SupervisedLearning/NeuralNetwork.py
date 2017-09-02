@@ -1,16 +1,18 @@
-from sklearn.neural_network import MLPClassifier
-from NeuralNetworkRunConfig import NeuralNetworkRunConfig as nnconfig
-import pandas as pd
-import SupervisedLearning as sl
-import numpy as np
-from sklearn.model_selection import ParameterGrid
-from sklearn.model_selection import GridSearchCV
 import glob
-import utils as u
-import time
-import DecisionTree as dt
 import os
+import time
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import GridSearchCV, ParameterGrid
+from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
+
+import DecisionTree as dt
+import SupervisedLearning as sl
+import utils as u
+from NeuralNetworkRunConfig import NeuralNetworkRunConfig as nnconfig
+
 
 def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, positive_class_label=None):
 	file_extn = "csv"
@@ -18,7 +20,7 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 
 	for dataset_dir in u.Get_Subdirectories(datasets_root_folder):
 		trainfile = glob.glob("{0}/*.train.{1}".format(dataset_dir,file_extn))[0]
-		paramfile = glob.glob("{0}/*.params.txt".format(dataset_dir,file_extn))[0]
+		paramfile = glob.glob("{0}/*.params.txt".format(dataset_dir))[0]
 		dt_root = u.PreparePath(dataset_dir+"/nnets",is_file=False)
 		config_gen = nnconfig()
 		config = config_gen.GetNextConfigAlongWithIdentifier()
@@ -128,6 +130,7 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 			output = pd.DataFrame({"actual":test_Y,"predicted":predicted_Y})
 			output.to_csv(test_output_file,index=False)
 
+			config.pop('random_state',None) # since we already have that in params_info
 			for k in config:
 				params_info.append("{0}={1}".format(k,config[k]))
 			u.WriteTextArrayToFile(params_output_file,params_info)
@@ -150,7 +153,7 @@ def NeuralNetExperiments():
 def RunNeuralNetsOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition"):
 	pos_class="v"
 	metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
-	keys_to_keep=['dataset_instance','test_split','train_split','noise_perc','train_split_percent_used','imbalance_perc','prune','modelbuildtimesecs','earlystopping','alphas','init_learning_rates','total_iter','time_per_iter','best_alpha','best_init_learning_rate','loss_curve','momentum','best_hidden_layer_sizes','hidden_layers']
+	keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','prune','modelbuildtimesecs','earlystopping','alphas','init_learning_rates','total_iter','time_per_iter','best_alpha','best_init_learning_rate','loss_curve','momentum','best_hidden_layer_sizes','hidden_layers']
 	classifier_fn = lambda x : RunNeuralNetClassifier(x,positive_class_label=pos_class)
 	id="nnet_1_all"
 	algo_folder='nnets'
@@ -160,7 +163,7 @@ def RunNeuralNetsOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\Gat
 def RunNeuralNetsOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"):
 	pos_class="+"
 	metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
-	keys_to_keep=['dataset_instance','test_split','train_split','noise_perc','train_split_percent_used','imbalance_perc','prune','modelbuildtimesecs','earlystopping','alphas','init_learning_rates','total_iter','time_per_iter','best_alpha','best_init_learning_rate','loss_curve','momentum','best_hidden_layer_sizes','hidden_layers']
+	keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','prune','modelbuildtimesecs','earlystopping','alphas','init_learning_rates','total_iter','time_per_iter','best_alpha','best_init_learning_rate','loss_curve','momentum','best_hidden_layer_sizes','hidden_layers']
 	classifier_fn = lambda x : RunNeuralNetClassifier(x,positive_class_label=pos_class,one_hot_encoding_cols=['A1','A4','A5','A6','A7','A9','A10','A12','A13'])
 	id="nnet_1_all"
 	algo_folder='nnets'
@@ -170,4 +173,3 @@ def RunNeuralNetsOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gate
 if __name__ == "__main__":
 	#RunNeuralNetsOnVowelRecognitionDataset()
 	RunNeuralNetsOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
-	

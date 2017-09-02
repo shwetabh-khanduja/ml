@@ -1,8 +1,3 @@
-"""
-java -classpath "C:\Program Files\Weka-3-8\weka.jar" weka.classifiers.trees.J48 -t train.arff -T test.arff -M 2 -c first -U -classifications "weka.classifiers.evaluation.output.prediction.CSV -file c:\temp\out.csv -p 1"
-java -classpath "C:\Program Files\Weka-3-8\weka.jar" weka.classifiers.meta.FilteredClassifier -F "weka.filters.unsupervised.instance.RemovePercentage -P 10 -V" -t train.arff -T test.arff -c first -classifications "weka.classifiers.evaluation.output.prediction.CSV -file c:\temp\out.csv -p 1" -W weka.classifiers.trees.J48 -- -M 2 -U
-"""
-
 import scipy as sc
 import numpy as np
 import pandas as pd
@@ -130,20 +125,20 @@ def CreateArffFileFromCsv(arff_attr_info, arff_file_path, data_text_array, isFil
 	file = u.PreparePath(arff_file_path)
 	u.WriteTextArrayToFile(file,arff_data)
 
-def GenerateVowelRecognitionDataSetSplits():
-	rootFolder=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition"
-	id=0
-	train_perc=80
-	test_perc=20
-	vowelDataFile=u.PreparePath("{0}/vowel-recongnition-dataset.csv".format(rootFolder))
-	arff_attrs_file = u.PreparePath("{0}/vowel.txt".format(rootFolder))
-	data,arff_attrs = LoadCharacterRecognitionDataset(vowelDataFile,arff_attrs_file)
-	r=0
-	train_size_percs = [20,30,40,50,60,70,80,90,100]
-	#GenerateDatasetSplits(rootFolder,id,data,test_perc,train_perc,0,train_size_percs,"vowel",random,arff_attrs)
-	imbalance_percs = [90,10,20,30,40,50,70,5,100]
-	minority_class = "v"
-	GenerateDatasetSplitsForClassImbalance(rootFolder,"imb"+str(id),data,test_perc,train_perc,0,imbalance_percs,"vowel",minority_class,500,r,arff_attrs)
+# def GenerateVowelRecognitionDataSetSplits():
+# 	rootFolder=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition"
+# 	id=0
+# 	train_perc=80
+# 	test_perc=20
+# 	vowelDataFile=u.PreparePath("{0}/vowel-recongnition-dataset.csv".format(rootFolder))
+# 	arff_attrs_file = u.PreparePath("{0}/vowel.txt".format(rootFolder))
+# 	data,arff_attrs = LoadCharacterRecognitionDataset(vowelDataFile,arff_attrs_file)
+# 	r=0
+# 	train_size_percs = [20,30,40,50,60,70,80,90,100]
+# 	#GenerateDatasetSplits(rootFolder,id,data,test_perc,train_perc,0,train_size_percs,"vowel",random,arff_attrs)
+# 	imbalance_percs = [90,10,20,30,40,50,70,5,100]
+# 	minority_class = "v"
+# 	GenerateDatasetSplitsForClassImbalance(rootFolder,"imb"+str(id),data,test_perc,train_perc,0,imbalance_percs,"vowel",minority_class,500,r,arff_attrs)
 
 def GenerateVowelRecognitionDataSetSplits(
 	rootFolder,
@@ -482,19 +477,3 @@ if __name__=="__main__":
 	r=2
 	GenerateCreditScreeningDataSetSplits(credit_screening_dataset_root,r,train_perc,test_perc,r,noise_percs=noise_percs)
 	GenerateVowelRecognitionDataSetSplits(letter_recognition_dataset_root,r,train_perc,test_perc,r,noise_percs=noise_percs)
-
-	#EvaluateDecisionTrees(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset\i-imb0_t-80_T-20",['dataset_instance','test_split','train_split','random_state','imbalance_perc','prune','modelbuildtimesecs'],'+')
-	#EvaluateDecisionTrees(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset\i-0_t-80_T-20",['dataset_instance','test_split','train_split','random_state','train_split_percent_used','prune','modelbuildtimesecs'],'+')
-	EvaluateDecisionTrees(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition\i-0_t-80_T-20",['dataset_instance','test_split','train_split','random_state','train_split_percent_used','prune','modelbuildtimesecs'],'v')
-	a = GetPrecisionRecallForWekaOutputFile(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition\i-imb0_t-80_T-20\i-imb0_t-80_im-5\dt\prune-False_numfolds-0_minleafsize-2\prune-True_numfolds-0_minleafsize-2.test.predictions.csv",'v')
-	#GenerateCreditScreeningDataSetSplits()
-	#RunDecisionTrees(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition\i-0_t-80_T-20")
-	GenerateVowelRecognitionDataSetSplits()
-	dataset_root = r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\WineDataset"
-	data = LoadWineDataSet(dataset_root)
-	run_instance = 0
-	train_out_file = dataset_root + r"\splits\{0}\train.arff".format(run_instance)
-	validatation_out_file = dataset_root +  r"\splits\{0}\validatation.arff".format(run_instance)
-	test_out_file = dataset_root + r"\splits\{0}\test.arff".format(run_instance)
-	arff_sections = u.ReadLinesFromFile(dataset_root+r"\arff_sections.txt")
-	splits = CreateTrainTestAndValidationPartitions(data,"class",0.7,0.3,run_instance,0.2,train_out_file,test_out_file,validatation_out_file,arff_sections)

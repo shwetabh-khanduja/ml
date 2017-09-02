@@ -1,13 +1,16 @@
-import pandas as pd
-import SupervisedLearning as sl
-import numpy as np
-from sklearn.model_selection import ParameterGrid
 import glob
-import utils as u
+import os
 import time
 import timeit
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import ParameterGrid
+
 import DecisionTree as dt
-import os
+import SupervisedLearning as sl
+import utils as u
+
 
 def GetIdForConfig(config):
     return "prune-{0}_iter-{1}".format(config['prune'],config['iter'])
@@ -33,7 +36,7 @@ def RunAdaBoostWithDecisionTrees(datasets_root_folder,weka_jar_path,use_arff_fil
     
     for dataset_dir in u.Get_Subdirectories(datasets_root_folder):
         trainfile = glob.glob("{0}/*.train.{1}".format(dataset_dir,file_extn))[0]
-        paramfile = glob.glob("{0}/*.params.txt".format(dataset_dir,file_extn))[0]
+        paramfile = glob.glob("{0}/*.params.txt".format(dataset_dir))[0]
         dt_root = u.PreparePath(dataset_dir+"/ada",is_file=False)
         config_gen = ParameterGrid({'prune':[True,False],'iter':[5,10,20,50]})
         for config in config_gen:
@@ -92,7 +95,7 @@ def RunAdaBoostOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech
 	dt.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
 
 def main():
-    RunAdaBoostOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
+    RunAdaBoostOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
 
 if __name__ == '__main__':
     main()
