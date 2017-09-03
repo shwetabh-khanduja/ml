@@ -25,7 +25,7 @@ def RunDecisionTrees(datasets_root_folder, weka_jar_path="C:\Program Files\Weka-
         trainfile = glob.glob(
             "{0}/*.train.{1}".format(dataset_dir, file_extn))[0]
         paramfile = glob.glob(
-            "{0}/*.params.txt".format(dataset_dir, file_extn))[0]
+            "{0}/*.params.txt".format(dataset_dir))[0]
         dt_root = u.PreparePath(dataset_dir + "/dt", is_file=False)
         config_gen = dtc.DecisionTreeRunConfig(
             prune=[True, False], numfolds=[3], minleafsize=[2])
@@ -43,7 +43,9 @@ def RunDecisionTrees(datasets_root_folder, weka_jar_path="C:\Program Files\Weka-
                 "{0}/{1}.train.predictions.csv".format(run_output_dir, id))
             test_output_file = u.PreparePath(
                 "{0}/{1}.test.predictions.csv".format(run_output_dir, id))
-
+            # if(os.path.isfile(test_output_file)):
+            #     config = config_gen.GetNextConfigAlongWithIdentifier()
+            #     continue
             config["wekajar"] = weka_jar_path
             config["trainset"] = trainfile
             config["class"] = "last"
@@ -339,5 +341,7 @@ def DecisionTreesExperiments():
 
 
 if __name__ == "__main__":
-    RunDecisionTreesOnCreditScreeningDataset(
-        r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
+    # RunDecisionTreesOnCreditScreeningDataset(
+    #     r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
+    RunDecisionTreesOnVowelRecognitionDataset(
+        r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")

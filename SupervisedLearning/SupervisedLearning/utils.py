@@ -76,6 +76,7 @@ def SaveDataPlotWithLegends(YSeries_array,
 
 	if dispose_fig is True:
 		plt.close(fig)
+		return [None, None]
 	else:
 		return [fig, ax1]
 
