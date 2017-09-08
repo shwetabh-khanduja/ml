@@ -17,7 +17,6 @@ import ast
 def GetIdForConfig(config):
     return "cvresults"
 
-
 def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_class_label=None):
     file_extn = "csv"
     testfiles = glob.glob("{0}/*.test.{1}".format(datasets_root_folder, file_extn))
@@ -53,11 +52,11 @@ def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_
                         {'C': [0.1, 1, 10, 100, 1000], 'degree' : [2,3,4],'kernel': ['poly']},
                         {'C': [0.1, 1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
                     ]
-        # classifier = SVC(cache_size=1500, random_state=int(params_info_dict['random_state']))
-        # gscv = GridSearchCV(classifier,param_grid,scoring='f1',n_jobs=3)
-        # gscv.fit(X,Y)
-        # _D = pd.DataFrame(gscv.cv_results_)
-        # best_params = gscv.best_params_
+        classifier = SVC(cache_size=1500, random_state=int(params_info_dict['random_state']))
+        gscv = GridSearchCV(classifier,param_grid,scoring='f1',n_jobs=3)
+        gscv.fit(X,Y)
+        _D = pd.DataFrame(gscv.cv_results_)
+        best_params = gscv.best_params_
         config_gen = [{}] 
         for config in config_gen:
             id = GetIdForConfig(config)
@@ -75,9 +74,9 @@ def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_
             cv_results_file=u.PreparePath(
                 "{0}/{1}.grid_search_cv_results.csv".format(run_output_dir,id))
 
-            # _D.to_csv(cv_results_file)
-            cv_results = pd.read_csv(cv_results_file)
-            best_params = ast.literal_eval(cv_results[cv_results['rank_test_score']==1].iloc[0]['params'])
+            _D.to_csv(cv_results_file)
+            # cv_results = pd.read_csv(cv_results_file)
+            # best_params = ast.literal_eval(cv_results[cv_results['rank_test_score']==1].iloc[0]['params'])
             # if(os.path.isfile(test_output_file)):
             #	config = config_gen.GetNextConfigAlongWithIdentifier()
             #	continue
@@ -130,7 +129,7 @@ def RunSvmClassifierOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\
     metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
     keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','kernel','C','gamma','degree','modelbuildtimesecs','modelevaltimesecs','numsupportvectors']
     classifier_fn = lambda x : RunSVMClassifier(x,positive_class_label=pos_class)
-    id="vowel.svm_1_all"
+    id="vowel.svm_2_all"
     algo_folder='svm'
     force_computation=True
     exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
@@ -140,7 +139,7 @@ def RunSvmClassifierOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\G
     metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
     keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','kernel','C','gamma','degree','modelbuildtimesecs','modelevaltimesecs','numsupportvectors']
     classifier_fn = lambda x : RunSVMClassifier(x,['A1','A4','A5','A6','A7','A9','A10','A12','A13'],pos_class)
-    id="credit.svm_1_all"
+    id="credit.svm_2_all"
     algo_folder='svm'
     force_computation=True
     exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)

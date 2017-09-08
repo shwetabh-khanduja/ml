@@ -45,6 +45,8 @@ def RunNEvaluateExperimentsOnDataSet(
     agg_eval_file = "{0}/eval_agg.{1}.csv".format(dataset_root, id)
     eval_files = []
     for dataset in u.Get_Subdirectories(dataset_root):
+        if('Plots' in dataset):
+            continue
         ignore = True
         if(len(datasets_to_run_on) == 0):
             ignore = False

@@ -24,8 +24,35 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
         trainfile = glob.glob("{0}/*.train.{1}".format(dataset_dir, file_extn))[0]
         paramfile = glob.glob("{0}/*.params.txt".format(dataset_dir))[0]
         dt_root = u.PreparePath(dataset_dir + "/knn", is_file=False)
+
+        data = pd.read_csv(trainfile)
+        testdata = pd.read_csv(testfiles[0])
+        train_len = len(data)
+
+        cols_to_ignore = set(
+            nominal_value_columns) if nominal_value_columns is not None else set([])
+        cols_to_ignore.add(data.columns[-1])
+        cols_to_transform = [c for c in data.columns if c not in cols_to_ignore]
+        scaler = StandardScaler()
+        scaler.fit(data[cols_to_transform])
+        data[cols_to_transform] = scaler.transform(data[cols_to_transform])
+        testdata[cols_to_transform] = scaler.transform(testdata[cols_to_transform])
+
+        all_data = pd.concat([data, testdata], axis=0, ignore_index=True)
+        X_all, Y_all = nnet.PrepareDataAndLabel(
+            all_data, positive_class_label, nominal_value_columns)
+        X = X_all[0:train_len, :]
+        Y = Y_all[0:train_len]
+        test_X = X_all[train_len:, :]
+        test_Y = Y_all[train_len:]
+
+        param_grid = {'weights': np.array(['uniform', 'distance']), 'n_neighbors': np.array([5, 10, 20, 50])}
+        classifier = KNeighborsClassifier()
+        gscv = GridSearchCV(classifier,param_grid,scoring='f1',n_jobs=3)
+        gscv.fit(X,Y)
+        _D = pd.DataFrame(gscv.cv_results_)
         config_gen = ParameterGrid(
-            {'weights': ['uniform', 'distance'], 'neighbors': [5, 10, 20, 50]})
+            {'weights': ['uniform', 'distance'], 'neighbors': [5, 10, 20, 50, -1]}) # -1 denotes that we need to take the cv results
         for config in config_gen:
             id = GetIdForConfig(config)
             params_info = u.ReadLinesFromFile(paramfile)
@@ -39,6 +66,9 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
                 "{0}/{1}.train.predictions.csv".format(run_output_dir, id))
             test_output_file = u.PreparePath(
                 "{0}/{1}.test.predictions.csv".format(run_output_dir, id))
+            cv_results_file=u.PreparePath(
+                "{0}/{1}.grid_search_cv_results.csv".format(run_output_dir,id))
+
             # if(os.path.isfile(test_output_file)):
             #	config = config_gen.GetNextConfigAlongWithIdentifier()
             #	continue
@@ -49,32 +79,41 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
             config["modeloutputfile"] = model_output_file
             config["testpredictionoutputfile"] = test_output_file
 
-            data = pd.read_csv(trainfile)
+            # data = pd.read_csv(trainfile)
             config["testset"] = testfiles[0]
-            testdata = pd.read_csv(config["testset"])
-            train_len = len(data)
+            # testdata = pd.read_csv(config["testset"])
+            # train_len = len(data)
 
-            cols_to_ignore = set(
-                nominal_value_columns) if nominal_value_columns is not None else set([])
-            cols_to_ignore.add(data.columns[-1])
-            cols_to_transform = [c for c in data.columns if c not in cols_to_ignore]
-            scaler = StandardScaler()
-            scaler.fit(data[cols_to_transform])
-            data[cols_to_transform] = scaler.transform(data[cols_to_transform])
-            testdata[cols_to_transform] = scaler.transform(testdata[cols_to_transform])
+            # cols_to_ignore = set(
+            #     nominal_value_columns) if nominal_value_columns is not None else set([])
+            # cols_to_ignore.add(data.columns[-1])
+            # cols_to_transform = [c for c in data.columns if c not in cols_to_ignore]
+            # scaler = StandardScaler()
+            # scaler.fit(data[cols_to_transform])
+            # data[cols_to_transform] = scaler.transform(data[cols_to_transform])
+            # testdata[cols_to_transform] = scaler.transform(testdata[cols_to_transform])
 
-            all_data = pd.concat([data, testdata], axis=0, ignore_index=True)
-            X_all, Y_all = nnet.PrepareDataAndLabel(
-                all_data, positive_class_label, nominal_value_columns)
-            X = X_all[0:train_len, :]
-            Y = Y_all[0:train_len]
-            test_X = X_all[train_len:, :]
-            test_Y = Y_all[train_len:]
+            # all_data = pd.concat([data, testdata], axis=0, ignore_index=True)
+            # X_all, Y_all = nnet.PrepareDataAndLabel(
+            #     all_data, positive_class_label, nominal_value_columns)
+            # X = X_all[0:train_len, :]
+            # Y = Y_all[0:train_len]
+            # test_X = X_all[train_len:, :]
+            # test_Y = Y_all[train_len:]
 
-            if(metric_fn is None):
-                classifier = KNeighborsClassifier(config['neighbors'],config['weights'])
+            if(config['neighbors'] == -1):
+                neighbors = gscv.best_params_['n_neighbors']
+                weights = gscv.best_params_['weights']
+                _D.to_csv(cv_results_file)
+                config['best_neighbors'] = neighbors
+                config['best_weights'] = weights
             else:
-                classifier = KNeighborsClassifier(config['neighbors'],config['weights'],algorithm='auto',metric='pyfunc',metric_params={'func': metric_fn})
+                neighbors = config['neighbors']
+                weights = config['weights']
+            if(metric_fn is None):
+                classifier = KNeighborsClassifier(neighbors,weights)
+            else:
+                classifier = KNeighborsClassifier(neighbors,weights,algorithm='auto',metric='pyfunc',metric_params={'func': metric_fn})
             start = time.clock()
             classifier.fit(X,Y)
             end = time.clock()
@@ -128,9 +167,9 @@ def DistanceFuncForCreditScreeningDataset(x,y,
 def RunKnnClassifierOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition"):
     pos_class="v"
     metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
-    keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','weights','neighbors','modelbuildtimesecs','modelevaltimesecs']
+    keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','weights','neighbors','modelbuildtimesecs','modelevaltimesecs','best_neighbors','best_weights']
     classifier_fn = lambda x : RunKNNClassifier(x,positive_class_label=pos_class)
-    id="vowel.knn_1_all"
+    id="vowel.knn_3_all"
     algo_folder='knn'
     force_computation=True
     exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
@@ -138,16 +177,16 @@ def RunKnnClassifierOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\
 def RunKnnClassifierOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"):
 	pos_class="+"
 	metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
-	keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','weights','neighbors','modelbuildtimesecs','modelevaltimesecs']
+	keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','weights','neighbors','modelbuildtimesecs','modelevaltimesecs','best_neighbors','best_weights']
 	classifier_fn = lambda x : RunKNNClassifier(x,['A1','A4','A5','A6','A7','A9','A10','A12','A13'],pos_class)
-	id="credit.knn_1_all"
+	id="credit.knn_3_all"
 	algo_folder='knn'
 	force_computation=True
 	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
 
 def main():
     RunKnnClassifierOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
-    # RunKnnClassifierOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
+    RunKnnClassifierOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
 
 if __name__ == '__main__':
     main()

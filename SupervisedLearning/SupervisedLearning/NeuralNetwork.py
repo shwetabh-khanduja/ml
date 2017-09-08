@@ -34,9 +34,9 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 			train_output_file=u.PreparePath("{0}/{1}.train.predictions.csv".format(run_output_dir,id))
 			test_output_file=u.PreparePath("{0}/{1}.test.predictions.csv".format(run_output_dir,id))
 			cv_results_file=u.PreparePath("{0}/{1}.grid_search_cv_results.csv".format(run_output_dir,id))
-			#if(os.path.isfile(test_output_file)):
-			#	config = config_gen.GetNextConfigAlongWithIdentifier()
-			#	continue
+			# if(os.path.isfile(cv_results_file)):
+			# 	config = config_gen.GetNextConfigAlongWithIdentifier()
+			# 	continue
 			config["trainset"] = trainfile
 			config["class"]="last"
 			config["trainpredictionoutputfile"]=train_output_file
@@ -85,7 +85,7 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 				random_state=random_state,
 				solver="sgd",
 				max_iter=max_iter)
-			gscv = GridSearchCV(classifier,param_grid,n_jobs=3)
+			gscv = GridSearchCV(classifier,param_grid,scoring='f1',n_jobs=3)
 			gscv.fit(X,Y)
 			_D = pd.DataFrame(gscv.cv_results_)
 			_D.to_csv(cv_results_file)
@@ -101,9 +101,9 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 				max_iter=max_iter,
 				learning_rate_init=gscv.best_params_["learning_rate_init"],
 				alpha=gscv.best_params_["alpha"])
-			start = time.clock();
+			start = time.clock()
 			classifier.fit(X,Y)
-			end = time.clock();
+			end = time.clock()
 
 			config['momentum']=momentum
 			config["hidden_layers"]="10;30;50;70"
@@ -157,7 +157,7 @@ def RunNeuralNetsOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\Gat
 	metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
 	keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','prune','modelbuildtimesecs','earlystopping','alphas','init_learning_rates','total_iter','time_per_iter','best_alpha','best_init_learning_rate','loss_curve','momentum','best_hidden_layer_sizes','hidden_layers']
 	classifier_fn = lambda x : RunNeuralNetClassifier(x,positive_class_label=pos_class)
-	id="vowel.nnet_2_all"
+	id="vowel.nnet_3_all"
 	algo_folder='nnets'
 	force_computation=True
 	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
@@ -167,7 +167,7 @@ def RunNeuralNetsOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gate
 	metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
 	keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','prune','modelbuildtimesecs','earlystopping','alphas','init_learning_rates','total_iter','time_per_iter','best_alpha','best_init_learning_rate','loss_curve','momentum','best_hidden_layer_sizes','hidden_layers']
 	classifier_fn = lambda x : RunNeuralNetClassifier(x,positive_class_label=pos_class,one_hot_encoding_cols=['A1','A4','A5','A6','A7','A9','A10','A12','A13'])
-	id="credit.nnet_2_all"
+	id="credit.nnet_3_all"
 	algo_folder='nnets'
 	force_computation=True
 	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
