@@ -2,7 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import matplotlib.lines as mlines
-
+import random
+from sklearn.model_selection import ParameterGrid
+import pandas as pd
 
 def WriteTextToFile(file, text):
     f = open(file, 'w')
@@ -37,14 +39,14 @@ def ReadLineFromFile(file, line_idx):
     f.close()
     return line_at_idx
 
-
 def SaveDataPlotWithLegends(YSeries_array,
                  x,
                  filename=None,
                  dispose_fig=True,
                  x_axis_name="",
                  y1_axis_name="",
-                 title=""):
+                 title="",
+                 legend_loc = 2):
 
 	# https://stackoverflow.com/questions/8409095/matplotlib-set-markers-for-individual-points-on-a-line
 	fig, ax1 = plt.subplots()
@@ -62,7 +64,7 @@ def SaveDataPlotWithLegends(YSeries_array,
 	ax1.set_xlabel(x_axis_name)
 	ax1.set_ylabel(y1_axis_name)
 	if(len(legends) > 0):
-		lgd = plt.legend(handles=legends,bbox_to_anchor=(1, 1),loc=2)
+		lgd = plt.legend(handles=legends,bbox_to_anchor=(1, 1),loc=legend_loc)
 
 	if(title != "" or title is not None):
 		plt.title(title)
@@ -218,10 +220,18 @@ def Get_Subdirectories(a_dir):
     return [os.path.join(a_dir, name) for name in os.listdir(a_dir)
             if os.path.isdir(os.path.join(a_dir, name))]
 
+def FilterRows(data, filter_fn):
+    return data[data.apply(filter_fn, axis=1)]
 
 def ConcatToStr(delimiter, values_array):
     return delimiter.join([str(x) for x in values_array])
 
+def GetMarkerColorCombinations(seed = 0):
+    grid = ParameterGrid([{'marker':['o','x','d','^','+','v','8','s','p','>','<'], 'color':['r','b','g','k','m','y','c']}])
+    combinations = [p for p in grid]
+    random.seed(seed)
+    random.shuffle(combinations)
+    return combinations
 
 class YSeries():
     def __init__(self, values, line_style='-', points_marker='o', line_color='r', plot_legend_label=None):

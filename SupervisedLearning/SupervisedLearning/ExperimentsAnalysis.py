@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from sklearn.model_selection import ParameterGrid
+import SupervisedLearning as sl
+import random
 
 def TestPlotting():
     y1 = u.YSeries(np.arange(10) * 2, line_style='-',
@@ -24,7 +27,6 @@ def GetAggMetrics(data, gpby=['train_split_percent_used', 'prune', 'istrain'], d
     data_agg.columns = ['_'.join(col).strip() if(
         col[1] != '') else col[0] for col in data_agg.columns.values]
     return data_agg.sort_values(gpby[dataset_type_col_idx])
-
 
 def AdaBoostAnalysis(
     output_root,
@@ -82,7 +84,6 @@ def AdaBoostAnalysis(
                             u.SaveDataPlotWithLegends([y_train_series, y_test_series], iterations, output_file_name, True,
                                                     "num of iterations", mapping_output_words[metric], "AdaBoost Performance ({0})".format(agg))
                         print(output_file_name)
-                        
 
 def KnnAnalysis(
     output_root,
@@ -149,7 +150,6 @@ def KnnAnalysis(
                                                   True, mapping_output_words[dataset_type], mapping_output_words[k], 'K Nearest Neighbor ({0})'.format(agg))
     return data_agg
 
-
 def DecisionTreeAnalysis(
         output_root,
         output_file_prefix,
@@ -203,12 +203,327 @@ def DecisionTreeAnalysis(
                 y_no_test_prune = u.YSeries(FilterRows(data_agg, test_no_prune_filter)[k + "_" + agg], line_color='b',
                                             points_marker='x', plot_legend_label="Test_without_pruning")
 
+                if((k=='modelbuildtimesecs')):
+                    y_series = [y_train_no_prune, y_train_prune]
+                else:
+                    y_series = [y_test_prune, y_no_test_prune, y_train_no_prune, y_train_prune]
+
                 output_file_name = u.PreparePath(
                     "{3}/{0}.{4}.{1}.{2}.png".format(output_file_prefix, k, agg, output_root, dataset_type))
-                f, ax = u.SaveDataPlotWithLegends([y_test_prune, y_no_test_prune, y_train_no_prune, y_train_prune], x, output_file_name,
+                f, ax = u.SaveDataPlotWithLegends(y_series, x, output_file_name,
                                                   True, mapping_output_words[dataset_type], mapping_output_words[k], 'Decision Trees Performance ({0})'.format(agg))
     return data_agg
 
+def SvmAnalysis(
+        output_root,
+        output_file_prefix,
+        metrics_file,
+        dataset_filter_fn = None):
+
+    def ComputeTotalSupportVectors(s):
+        return np.array([int(t) for t in s.split(';')]).sum()
+
+    data_all = pd.read_csv(metrics_file)
+    data_all['numsupportvectors'] = data_all['numsupportvectors'].apply(ComputeTotalSupportVectors)
+    dataset_types = ['train_split_percent_used',
+                     'imbalance_perc', 'noise_perc']
+    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
+        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std'], 'numsupportvectors': ['mean', 'std']}
+
+    mapping_output_words = {
+        'p': 'Precision',
+        'r': 'Recall',
+        'f': 'F-Measure',
+        dataset_types[0]: 'Train size % used',
+        dataset_types[1]: 'Fraction of postives to negatives',
+        dataset_types[2]: 'Noise %',
+        'modelbuildtimesecs': 'Time to build model (sec)',
+        'numsupportvectors': 'Number of Support Vectors'}
+
+    for dataset_type in dataset_types:
+
+        def filter_query(x): return ~np.isnan(x[dataset_type])
+
+        def train_filter(x): return (x['istrain'] == 1)
+
+        def test_filter(x): return (x['istrain'] == 0)
+
+        if(dataset_filter_fn is not None):
+            data_all = FilterRows(data_all, dataset_filter_fn)
+        data = FilterRows(data_all, filter_query)
+        data_agg = GetAggMetrics(data, col_funcs=col_funcs, gpby=[
+            dataset_type, 'istrain'])
+        x = data_agg[dataset_type].unique()
+
+        for k, v in col_funcs.items():
+            for agg in v:
+                y_train = u.YSeries(FilterRows(data_agg, train_filter)[k + "_" + agg], line_color='r',
+                                          points_marker='o', plot_legend_label="Train")
+                y_test = u.YSeries(FilterRows(data_agg, test_filter)[k + "_" + agg], line_color='b',
+                                         points_marker='o', plot_legend_label="Test")
+                if((k=='numsupportvectors') | (k=='modelbuildtimesecs')):
+                    y_series = [y_train]
+                else:
+                    y_series = [y_test, y_train]
+
+                output_file_name = u.PreparePath(
+                    "{3}/{0}.{4}.{1}.{2}.png".format(output_file_prefix, k, agg, output_root, dataset_type))
+                f, ax = u.SaveDataPlotWithLegends(y_series, x, output_file_name,
+                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], 'SVM Performance ({0})'.format(agg))
+    return data_agg
+
+def PlotCrossValidationCurvesForNNets():
+    root = r'C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset'
+    stopping = 'earlyStop-True'
+    dataset_instance_root = root + r'\i-imb3_t-80_T-20'
+    plot_output_file = root+ r'\Plots\nnets\cv.{0}.nnets.i-imb3_t-80_T-20.png'.format(stopping)
+    x_axis_name = 'Fraction of positives to negatives'#'Train size % used'
+    parameter_name = 'imbalance_perc'
+    y_axis_name = 'F-Measure'
+    title = 'CV Peformance'
+    def parameter_getter(path):
+        paramfile = "{0}/nnets/{1}/{1}.params.txt".format(path,stopping)
+        params_info = u.ReadLinesFromFile(paramfile)
+        params_info_dict=sl.GetDictionary(params_info)
+        return int(params_info_dict[parameter_name])
+
+    def cv_getter(path):
+        return "{0}/nnets/{1}/{1}.grid_search_cv_results.csv".format(path,stopping)
+    PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter)
+
+def PlotCrossValidationCurvesForSvm():
+    root = r'C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset'
+    dataset_instance_root = root + r'\i-0_t-80_T-20'
+    plot_output_file = root+ r'\Plots\svm\cv.svm.i-0_t-80_T-20.png'
+    x_axis_name = 'Train size % used'
+    y_axis_name = 'F-Measure'
+    title = 'CV Peformance'
+    def parameter_getter(path):
+        paramfile = "{0}/svm/cvresults/cvresults.params.txt".format(path)
+        params_info = u.ReadLinesFromFile(paramfile)
+        params_info_dict=sl.GetDictionary(params_info)
+        return int(params_info_dict['train_split_percent_used'])
+
+    def cv_getter(path):
+        return "{0}/svm/cvresults/cvresults.grid_search_cv_results.csv".format(path)
+    PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter)
+
+def PlotCrossValidationCurves(
+    dataset_instance_root,
+    plot_output_file,
+    x_axis_name,
+    y_axis_name,
+    title,
+    parameter_value_getter_fn,
+    cv_results_file_getter_fn):
+    grid = ParameterGrid([{'marker':['o','x','d','^','+','v','8','s','p','>','<'], 'color':['r','b','g','k','m','y','c']}])
+    combinations = [p for p in grid]
+    random.shuffle(combinations)
+    param_dict = {}
+    x_value_dict = {}
+    for parameter_value_dataset in u.Get_Subdirectories(dataset_instance_root):
+        cv_results = pd.read_csv(cv_results_file_getter_fn(parameter_value_dataset))
+        parameter_value = parameter_value_getter_fn(parameter_value_dataset)
+        for i in range(len(cv_results)):
+            #param_dict = {param1 : series_1}
+            param = cv_results.iloc[i]['params']
+            s = pd.Series({parameter_value : cv_results.iloc[i]['mean_test_score']})
+            if param in param_dict:
+                param_dict[param] = param_dict[param].append(s)
+            else:
+                param_dict[param] = s
+    yseries = []
+    x = []
+    for name,value in param_dict.items():
+        theme = combinations.pop()
+        y = u.YSeries(value.sort_index().values,points_marker=theme['marker'],line_color=theme['color'],plot_legend_label=name)
+        yseries.append(y)
+        x = value.sort_index().index
+    u.SaveDataPlotWithLegends(yseries,x,plot_output_file,True,x_axis_name,y_axis_name)
+
+def GetBestResultsForSvms(metrics_file):
+    dataset_types = ['train_split_percent_used',
+                     'imbalance_perc', 'noise_perc']
+    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
+        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std']}
+    dataset = {'train_split_percent_used' : 'Train size % used', 'imbalance_perc' : 'fraction of positives to negatives', 'noise_perc' : 'noise %'}
+    allresults = None
+    for parameter in dataset_types:
+            def filter_fn(x) : return (x['istrain'] == 0)
+            results = _GetBestResults(metrics_file,dataset[parameter],parameter,"svm", filter_fn,col_funcs)
+            results = results.drop(parameter,axis=1)
+            if allresults is None:
+                allresults = results
+            else:
+                allresults = pd.concat([allresults, results], axis=0, ignore_index=True)
+    return allresults
+
+def GetBestResultsForDecisionTrees(metrics_file):
+    dataset_types = ['train_split_percent_used',
+                     'imbalance_perc', 'noise_perc']
+    prune = [True,False]
+    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
+        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std']}
+    dataset = {'train_split_percent_used' : 'Train size % used', 'imbalance_perc' : 'fraction of positives to negatives', 'noise_perc' : 'noise %'}
+    allresults = None
+    for es in prune:
+        for parameter in dataset_types:
+            def filter_fn(x) : return (x['prune'] == es) & (x['istrain'] == 0)
+            results = _GetBestResults(metrics_file,dataset[parameter],parameter,"dts_prune-{0}".format(es),filter_fn,col_funcs)
+            results = results.drop(parameter,axis=1)
+            if allresults is None:
+                allresults = results
+            else:
+                allresults = pd.concat([allresults, results], axis=0, ignore_index=True)
+    return allresults
+
+def GetBestResultsForAdaboost(metrics_file):
+    dataset_types = ['train_split_percent_used',
+                     'imbalance_perc', 'noise_perc']
+    prune = [True,False]
+    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
+        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std']}
+    dataset = {'train_split_percent_used' : 'Train size % used', 'imbalance_perc' : 'fraction of positives to negatives', 'noise_perc' : 'noise %'}
+    allresults = None
+    alldata = pd.read_csv(metrics_file)
+    for es in prune:
+        for parameter in dataset_types:
+            """
+            beacuse i haven't done cross validation, i have to choose that iteration for each
+            data set that gives the maximum f1 score
+            """
+            def param_filter_fn(x) : return ~(np.isnan(x[parameter]))
+            data = FilterRows(alldata,param_filter_fn)
+            best_results = None
+            filtered_data = data
+            for ds_instance in data['dataset_instance'].unique():
+                for p_instance in data[parameter].unique():
+                    def filter_fn(x) : return (x['prune'] == es) & (x['istrain'] == 0) & (x['dataset_instance'] == ds_instance) & (x[parameter] == p_instance)
+                    filtered_rows = FilterRows(data,filter_fn)
+                    a = filtered_rows['f']
+                    if(len(a) == 0):
+                        print("ignoring : {0} {1}".format(ds_instance,p_instance))
+                        continue
+                    b = np.max(filtered_rows['f'])
+                    indxs = np.isclose(a,b)
+                    best_iters = filtered_rows[indxs]
+                    best_iters = best_iters.iloc[0]['iter']
+                    print("{0} {1} {2} {3}".format(ds_instance,p_instance,str(best_iters),es))
+                    def data_filter_fn(x) : return (x['prune'] == es) & (x['istrain'] == 0) & (x['dataset_instance'] == ds_instance) & (x[parameter] == p_instance) & (x['iter'] == best_iters)
+                    filtered_data = FilterRows(filtered_rows,data_filter_fn)
+                    if best_results is None:
+                        best_results = filtered_data
+                    else:
+                        best_results=pd.concat([best_results,filtered_data],axis = 0,ignore_index=True)
+                    print(len(best_results))
+
+            results = _GetBestResults(metrics_file,dataset[parameter],parameter,"adaboost_prune-{0}".format(es),lambda x : True, col_funcs,data=best_results)
+            results = results.drop(parameter,axis=1)
+            if allresults is None:
+                allresults = results
+            else:
+                allresults = pd.concat([allresults, results], axis=0, ignore_index=True)
+    return allresults
+
+def GetBestResultsForNNets(metrics_file):
+    dataset_types = ['train_split_percent_used',
+                     'imbalance_perc', 'noise_perc']
+    earlystopping = [True,False]
+    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
+        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std']}
+    dataset = {'train_split_percent_used' : 'Train size % used', 'imbalance_perc' : 'fraction of positives to negatives', 'noise_perc' : 'noise %'}
+    allresults = None
+    for es in earlystopping:
+        for parameter in dataset_types:
+            def filter_fn(x) : return (x['earlystopping'] == es) & (x['istrain'] == 0)
+            results = _GetBestResults(metrics_file,dataset[parameter],parameter,"nnets_earlyStopping-{0}".format(es),filter_fn,col_funcs)
+            results = results.drop(parameter,axis=1)
+            if allresults is None:
+                allresults = results
+            else:
+                allresults = pd.concat([allresults, results], axis=0, ignore_index=True)
+    return allresults
+
+def GetBestResultsForKnn(metrics_file):
+    dataset_types = ['train_split_percent_used',
+                     'imbalance_perc', 'noise_perc']
+    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
+        'mean', 'std'], 'modelevaltimesecs': ['mean', 'std']}
+    dataset = {'train_split_percent_used' : 'Train size % used', 'imbalance_perc' : 'fraction of positives to negatives', 'noise_perc' : 'noise %'}
+    allresults = None
+    for parameter in dataset_types:
+            def filter_fn(x) : return (x['weights'] == 'distance') & (x['istrain'] == 0) & (x['neighbors'] == -1)
+            results = _GetBestResults(metrics_file,dataset[parameter],parameter,"knn",filter_fn,col_funcs)
+            results['modelbuildtimesecs_mean'] = results['modelevaltimesecs_mean']
+            results['modelbuildtimesecs_std'] = results['modelevaltimesecs_std']
+            results = results.drop([parameter,'modelevaltimesecs_mean','modelevaltimesecs_std'],axis=1)
+            if allresults is None:
+                allresults = results
+            else:
+                allresults = pd.concat([allresults, results], axis=0, ignore_index=True)
+    return allresults
+
+def GetBestResultsForVowelRecognitionDataset(root_folder, output_path_relvative_to_root="all_performance.csv"):
+    ada_metrics_file = root_folder + r'/eval_agg.vowel.ada_1_all.csv'
+    ada_results = GetBestResultsForAdaboost(ada_metrics_file)
+
+    svm_metrics_file = root_folder + r'/eval_agg.vowel.svm_2_all.csv'
+    svm_results = GetBestResultsForSvms(svm_metrics_file)
+
+    dts_metrics_file = root_folder + r'/eval_agg.vowel.dt_1_all.csv'
+    dts_results = GetBestResultsForDecisionTrees(dts_metrics_file)
+
+    nnets_metrics_file = root_folder + r'/eval_agg.vowel.nnet_2_all.csv'
+    nnets_results = GetBestResultsForNNets(nnets_metrics_file)
+
+    knn_metrics_file = root_folder + r'/eval_agg.vowel.knn_3_all.csv'
+    knn_results = GetBestResultsForKnn(knn_metrics_file)
+
+    output = pd.concat([nnets_results, knn_results, dts_results, svm_results, ada_results], axis=0, ignore_index=True)
+    output_file = u.PreparePath(root_folder+"/"+output_path_relvative_to_root)
+    output.to_csv(output_file,index=False)
+
+    for dataset in output['dataset'].unique():
+        yseries = []
+        markers = u.GetMarkerColorCombinations()
+        metric_plots = {}
+        x = []
+        for algo in output['algorithm'].unique():
+            filter_fn = lambda x : (x['algorithm'] == algo) & (x['dataset'] == dataset)
+            filtered_data = FilterRows(output,filter_fn)
+            data = filtered_data.set_index('parameter')
+            data= data.drop(['algorithm','dataset'],axis=1)
+            data = data.sort_index()
+            x = data.index.values
+            theme = markers.pop()
+            for column in data.columns:
+                y = u.YSeries(data[column].values,points_marker=theme['marker'],line_color=theme['color'],plot_legend_label = algo)
+                if column in metric_plots:
+                    metric_plots[column].append(y)
+                else : 
+                    metric_plots[column] = [y]
+        token_map = {'f' : 'F-Measure','r' : 'Recall','p' : 'Precision','modelbuildtimesecs': 'Time to build model (sec)'}
+        for metric,series in metric_plots.items():
+            outputfilename = u.PreparePath(root_folder+"/Plots/all/{0}-{1}.png".format(dataset,metric))
+            tokens = metric.split('_')
+            y_axis_name = token_map[tokens[0]]
+            x_axis_name = dataset
+            title = dataset+" ({0})".format(tokens[1])
+            u.SaveDataPlotWithLegends(series,x,outputfilename,x_axis_name = x_axis_name,y1_axis_name = y_axis_name,title=title)
+
+def _GetBestResults(metrics_file,dataset,parameter,algorithm,rows_filter_fn,col_fns, data = None):
+    """
+    The final output schema should be : 
+    dataset,parameter,algorithm,f_mean,p_mean,r_mean,time_mean
+    TrainSize,20,earlystop-NNets,0.8,0.8,0.8,1.2
+    """
+    data = pd.read_csv(metrics_file) if data is None else data
+    filtered_data = FilterRows(data,rows_filter_fn)
+    gped_data = GetAggMetrics(filtered_data,gpby=[parameter],col_funcs = col_fns)
+    gped_data['dataset'] = dataset
+    gped_data['parameter'] = gped_data[parameter]
+    gped_data['algorithm'] = algorithm
+    return gped_data
 
 def FilterRows(data, filter_fn):
     return data[data.apply(filter_fn, axis=1)]
@@ -281,53 +596,73 @@ def NNetAnalysis(
     return data_agg
 
 def main():
-    root = r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets"
-    
+    root = r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets"
+    GetBestResultsForVowelRecognitionDataset(root+'/LetterRecognition')
+    #PlotCrossValidationCurvesForSvm()
+    PlotCrossValidationCurvesForNNets()
     # KnnAnalysis(root + r'\CreditScreeningDataset\Plots\knn', r'dt.creditscreening',
     #             root + r"\CreditScreeningDataset\eval_agg.credit.knn_1_all.csv")
     # KnnAnalysis(root + r'\LetterRecognition\Plots\knn', r'dt.vowelrecognition',
                 # root + r"\LetterRecognition\eval_agg.vowel.knn_1_all.csv")
 
-    # DecisionTreeAnalysis(root + r'\CreditScreeningDataset\Plots\dt', r'dt.creditscreening',root + r"\CreditScreeningDataset\eval_agg.credit.dt_2_all.csv")
-    # DecisionTreeAnalysis(root + r'\LetterRecognition\Plots\dt', r'dt.vowelrecognition',root + r"\LetterRecognition\eval_agg.vowel.dt_1_all.csv")
+    DecisionTreeAnalysis(
+        root + r'\CreditScreeningDataset\Plots\dt', 
+        r'dt.creditscreening',
+        root + r"\CreditScreeningDataset\eval_agg.credit.dt_2_all.csv")
+    DecisionTreeAnalysis(
+        root + r'\LetterRecognition\Plots\dt', 
+        r'dt.vowelrecognition',
+        root + r"\LetterRecognition\eval_agg.vowel.dt_1_all.csv")
 
-    #Neural net Analysis : We ignore results corresponding to some min num of iterations
-    # since for those the algorithm did not converge, mainly 8 or less iterations
-    NNetAnalysis(
-        root + r'\CreditScreeningDataset\Plots\nnets',
-        'dt.creditscreening',
-        root + r'\CreditScreeningDataset\eval_agg.credit.nnet_1_all.csv',
-        8)
+#Neural net Analysis : We ignore results corresponding to some min num of iterations
+# since for those the algorithm did not converge, mainly 8 or less iterations
+    #NNetAnalysis(
+    #    root + r'\CreditScreeningDataset\Plots\nnets',
+    #    'dt.creditscreening',
+    #    root + r'\CreditScreeningDataset\eval_agg.credit.nnet_1_all.csv',
+    #    8)
 
-    NNetAnalysis(
-        root + r'\LetterRecognition\Plots\nnets',
-        'dt.vowelrecognition',
-        root + r'\LetterRecognition\eval_agg.vowel.nnet_1_all.csv',
-        8)
+    #NNetAnalysis(
+    #    root + r'\LetterRecognition\Plots\nnets',
+    #    'dt.vowelrecognition',
+    #    root + r'\LetterRecognition\eval_agg.vowel.nnet_1_all.csv',
+    #    8)
 
+#Svm Analysis
+    SvmAnalysis(
+         root + r'\LetterRecognition\Plots\svm', 
+         r'dt.vowelrecognition.svm',
+         root + r"\LetterRecognition\eval_agg.vowel.svm_2_all.csv",
+         None)
+
+    SvmAnalysis(
+         root + r'\CreditScreeningDataset\Plots\svm', 
+         r'dt.creditscreening.svm',
+         root + r"\CreditScreeningDataset\eval_agg.credit.svm_2_all.csv",
+         None)
 
 #Adaboost Analysis : First couple of functions generate plots showing how train/test error varies
 # as iterations increase. Last 2 functions plot learning curves for a fixed number of iterations
-    # AdaBoostAnalysis(
-    #             root + r'\CreditScreeningDataset\Plots\ada', 
-    #             'dt.creditscreening',
-    #             root + r"\CreditScreeningDataset\eval_agg.credit.ada_1_all.csv")
-    # AdaBoostAnalysis(
-    #             root + r'\LetterRecognition\Plots\ada', 
-    #             'dt.vowelrecognition',
-    #             root + r"\LetterRecognition\eval_agg.vowel.ada_1_all.csv")
+    AdaBoostAnalysis(
+                root + r'\CreditScreeningDataset\Plots\ada', 
+                'dt.creditscreening',
+                root + r"\CreditScreeningDataset\eval_agg.credit.ada_1_all.csv")
+    AdaBoostAnalysis(
+                root + r'\LetterRecognition\Plots\ada', 
+                'dt.vowelrecognition',
+                root + r"\LetterRecognition\eval_agg.vowel.ada_1_all.csv")
 
-    # DecisionTreeAnalysis(
-    #     root + r'\CreditScreeningDataset\Plots\ada_10_iters', 
-    #     r'dt.creditscreening.ada_10_iters',
-    #     root + r"\CreditScreeningDataset\eval_agg.credit.ada_1_all.csv",
-    #     lambda x : x['iter'] == 10)
+    DecisionTreeAnalysis(
+        root + r'\CreditScreeningDataset\Plots\ada_10_iters', 
+        r'dt.creditscreening.ada_10_iters',
+        root + r"\CreditScreeningDataset\eval_agg.credit.ada_1_all.csv",
+        lambda x : x['iter'] == 10)
 
-    # DecisionTreeAnalysis(
-    #     root + r'\LetterRecognition\Plots\ada_50_iters', 
-    #     r'dt.vowelrecognition.ada_50_iters',
-    #     root + r"\LetterRecognition\eval_agg.vowel.ada_1_all.csv",
-    #     lambda x : x['iter'] == 50)
+    DecisionTreeAnalysis(
+        root + r'\LetterRecognition\Plots\ada_50_iters', 
+        r'dt.vowelrecognition.ada_50_iters',
+        root + r"\LetterRecognition\eval_agg.vowel.ada_1_all.csv",
+        lambda x : x['iter'] == 50)
 
 if __name__ == '__main__':
     main()

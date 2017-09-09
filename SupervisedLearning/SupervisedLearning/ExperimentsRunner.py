@@ -14,7 +14,8 @@ def RunNEvaluateExperimentsOnDataSet(
         params_to_keep,
         positive_class,
         datasets_to_run_on=[],
-        force=False):
+        force=False,
+        should_eval_dir = lambda x : True):
     """
     classifier_fn : This is the main classifier function that is called by passing in 
                     the dataset
@@ -66,7 +67,7 @@ def RunNEvaluateExperimentsOnDataSet(
         # this root is for the various configs of the dataset
         classifer_fn(dataset)
         EvaluateExperiments(dataset, params_to_keep, positive_class,
-                            metric_calculation_fn, eval_file, algo_folder)
+                            metric_calculation_fn, eval_file, algo_folder,should_eval_dir)
     df = None
     for file in eval_files:
         d = pd.read_csv(file)
@@ -80,7 +81,8 @@ def EvaluateExperiments(
         positive_class,
         metric_calculation_fn,
         evaluation_output_filename="performance.csv",
-        algo_folder="dt"):
+        algo_folder="dt",
+        should_eval = lambda x : True):
 
     headers = []
     headers.extend(params_to_keep)
@@ -92,6 +94,9 @@ def EvaluateExperiments(
         # each directory is a dataset directory
         dt_output_dir = "{0}/{1}".format(directory, algo_folder)
         for run_output_folder in u.Get_Subdirectories(dt_output_dir):
+            if(should_eval(run_output_folder) == False):
+                print("ignoring : {0}".format(run_output_folder))
+                continue
             # read params file
             params_file_path = glob.glob(
                 "{0}/*.params.txt".format(run_output_folder))[0]
