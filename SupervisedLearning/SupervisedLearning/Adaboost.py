@@ -20,10 +20,10 @@ def GetIdForOptConfig(config):
 
 def GetWekaCommandLineForConfig(config,is_test, do_cv = True):
     weka_commandline_template_train_with_pruning = "java -classpath \"{0}\" weka.classifiers.meta.AdaBoostM1 -I {5} -t \"{1}\" -S {2} -d \"{3}\" -no-cv -classifications \"weka.classifiers.evaluation.output.prediction.CSV -file {4}\" -W weka.classifiers.trees.J48 -- -R -N 3"
-    weka_commandline_template_train_with_pruning_cv = "java -classpath \"{0}\" weka.classifiers.meta.AdaBoostM1 -I {5} -t \"{1}\" -S {2} -d \"{3}\" -x 3 -classifications \"weka.classifiers.evaluation.output.prediction.CSV -file {4}\" -W weka.classifiers.trees.J48 -- -R -N 3"
+    weka_commandline_template_train_with_pruning_cv = "java -classpath \"{0}\" weka.classifiers.meta.AdaBoostM1 -I {5} -t \"{1}\" -S {2} -d \"{3}\" -split-percentage 66 -classifications \"weka.classifiers.evaluation.output.prediction.CSV -file {4}\" -W weka.classifiers.trees.J48 -- -R -N 3"
     weka_commandline_template_test = "java -classpath \"{0}\" weka.classifiers.meta.AdaBoostM1 -T \"{1}\" -l {2} -classifications \"weka.classifiers.evaluation.output.prediction.CSV -file {3}\""
     weka_commandline_template_train_without_pruning = "java -classpath \"{0}\" weka.classifiers.meta.AdaBoostM1 -I {5} -t \"{1}\" -S {2} -d \"{3}\" -no-cv -classifications \"weka.classifiers.evaluation.output.prediction.CSV -file {4}\" -W weka.classifiers.trees.J48 -- -U"
-    weka_commandline_template_train_without_pruning_cv = "java -classpath \"{0}\" weka.classifiers.meta.AdaBoostM1 -I {5} -t \"{1}\" -S {2} -d \"{3}\" -x 3 -classifications \"weka.classifiers.evaluation.output.prediction.CSV -file {4}\" -W weka.classifiers.trees.J48 -- -U"
+    weka_commandline_template_train_without_pruning_cv = "java -classpath \"{0}\" weka.classifiers.meta.AdaBoostM1 -I {5} -t \"{1}\" -S {2} -d \"{3}\" -split-percentage 66 -classifications \"weka.classifiers.evaluation.output.prediction.CSV -file {4}\" -W weka.classifiers.trees.J48 -- -U"
 
     if(is_test):
         return weka_commandline_template_test.format(config['wekajar'],config['testset'],config['modeloutputfile'],config['testpredictionoutputfile'])
@@ -59,7 +59,8 @@ def RunAdaBoostWithDecisionTrees(datasets_root_folder,weka_jar_path,use_arff_fil
             model_output_file=u.PreparePath("{0}/{1}.model".format(run_output_dir,id))
             train_output_file=u.PreparePath("{0}/{1}.train.predictions.csv".format(run_output_dir,id))
             test_output_file=u.PreparePath("{0}/{1}.test.predictions.csv".format(run_output_dir,id))
-
+            # if(os.path.isfile(train_output_file)):
+            #     continue
             config['random_state'] = params_info_dict['random_state']
             config["wekajar"] = weka_jar_path
             config["trainset"] = trainfile
@@ -129,7 +130,8 @@ def RunAdaBoostWithOptimalItersAndDecisionTrees(datasets_root_folder,weka_jar_pa
             model_output_file=u.PreparePath("{0}/{1}.model".format(run_output_dir,id))
             train_output_file=u.PreparePath("{0}/{1}.train.predictions.csv".format(run_output_dir,id))
             test_output_file=u.PreparePath("{0}/{1}.test.predictions.csv".format(run_output_dir,id))
-
+            # if(os.path.isfile(train_output_file)):
+            #     continue
             config['random_state'] = params_info_dict['random_state']
             config["wekajar"] = weka_jar_path
             config["trainset"] = trainfile
@@ -194,8 +196,8 @@ def RunAdaBoostOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech
     exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,opt_id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation,opt_eval_fn)
 
 def main():
+    RunAdaBoostOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
     RunAdaBoostOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
-    RunAdaBoostOnCreditScreeningDataset(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
 
 if __name__ == '__main__':
     main()
