@@ -13,7 +13,7 @@ def TestPlotting():
     y2 = u.YSeries(np.arange(10), line_style='-',
                    points_marker='x', line_color='b', plot_legend_label='x')
     x = np.arange(10)
-    fig, ax = u.SaveDataPlotWithLegends([y1, y2], x, r"c:\temp\testfig.png", dispose_fig=False,
+    fig, ax = u.SaveDataPlotWithLegends([y1, y2], x, r"c:/temp/testfig.png", dispose_fig=False,
                                         x_axis_name="x values", y1_axis_name="y values", title="x square")
     plt.show(fig)
 
@@ -273,12 +273,15 @@ def SvmAnalysis(
     return data_agg
 
 def PlotCrossValidationCurvesForNNets():
-    root = r'C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset'
-    stopping = 'earlyStop-True'
-    dataset_instance_root = root + r'\i-imb3_t-80_T-20'
-    plot_output_file = root+ r'\Plots\nnets\cv.{0}.nnets.i-imb3_t-80_T-20.png'.format(stopping)
-    x_axis_name = 'Fraction of positives to negatives'#'Train size % used'
-    parameter_name = 'imbalance_perc'
+    #root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition'
+    root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/CreditScreeningDataset'
+    instance = r'i-0_t-80_T-20'
+    stopping = 'earlyStop-False'
+    dataset_instance_root = root + '/' + instance
+    plot_output_file = root+ r'/Plots/nnets/cv.{0}.nnets.{1}.png'.format(stopping, instance)
+    cv_save_file = dataset_instance_root + "/nnets.{0}.{1}.model_complexity_curves.csv".format(instance,stopping)
+    x_axis_name = 'Train size % used'
+    parameter_name = 'train_split_percent_used'
     y_axis_name = 'F-Measure'
     title = 'CV Peformance'
     def parameter_getter(path):
@@ -289,12 +292,19 @@ def PlotCrossValidationCurvesForNNets():
 
     def cv_getter(path):
         return "{0}/nnets/{1}/{1}.grid_search_cv_results.csv".format(path,stopping)
-    PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter)
+
+    PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,cv_save_file)
+    plot_fn = lambda x : (("0.0001" in x) | ("0.0001" in x)) & (("70" in x) | ("50" in x))
+    plot_output_file = root+ r'/Plots/nnets/cv.small.{0}.nnets.{1}.png'.format(stopping, instance)
+    PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,should_plot = plot_fn)
 
 def PlotCrossValidationCurvesForSvm():
-    root = r'C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset'
-    dataset_instance_root = root + r'\i-0_t-80_T-20'
-    plot_output_file = root+ r'\Plots\svm\cv.svm.i-0_t-80_T-20.png'
+    root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition'
+    #root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/CreditScreeningDataset'
+    instance = r'i-0_t-80_T-20'
+    dataset_instance_root = root + "/" + instance
+    plot_output_file = root+ r'/Plots/svm/cv.svm.{0}.png'.format(instance)
+    cv_save_file = dataset_instance_root + "/svm.{0}.model_complexity_curves.csv".format(instance)
     x_axis_name = 'Train size % used'
     y_axis_name = 'F-Measure'
     title = 'CV Peformance'
@@ -306,7 +316,7 @@ def PlotCrossValidationCurvesForSvm():
 
     def cv_getter(path):
         return "{0}/svm/cvresults/cvresults.grid_search_cv_results.csv".format(path)
-    PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter)
+    PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,cv_save_file)
 
 def PlotCrossValidationCurves(
     dataset_instance_root,
@@ -315,9 +325,12 @@ def PlotCrossValidationCurves(
     y_axis_name,
     title,
     parameter_value_getter_fn,
-    cv_results_file_getter_fn):
-    grid = ParameterGrid([{'marker':['o','x','d','^','+','v','8','s','p','>','<'], 'color':['r','b','g','k','m','y','c']}])
+    cv_results_file_getter_fn,
+    cv_save_file=None,
+    should_plot = lambda x : True):
+    grid = ParameterGrid([{'marker':['o','x','d','^','+','v','8','s','p','>','<'], 'color':['orange','red','blue','green','black','saddlebrown','violet','darkcyan','maroon','lightcoral']}])
     combinations = [p for p in grid]
+    random.seed(30)
     random.shuffle(combinations)
     param_dict = {}
     x_value_dict = {}
@@ -335,11 +348,15 @@ def PlotCrossValidationCurves(
     yseries = []
     x = []
     for name,value in param_dict.items():
+        if(should_plot(name) == False):
+            continue
         theme = combinations.pop()
         y = u.YSeries(value.sort_index().values,points_marker=theme['marker'],line_color=theme['color'],plot_legend_label=name)
         yseries.append(y)
         x = value.sort_index().index
     u.SaveDataPlotWithLegends(yseries,x,plot_output_file,True,x_axis_name,y_axis_name)
+    if(cv_save_file is not None):
+        pd.DataFrame(param_dict).transpose().to_csv(cv_save_file)
 
 def GetBestResultsForSvms(metrics_file):
     dataset_types = ['train_split_percent_used',
@@ -596,72 +613,72 @@ def NNetAnalysis(
     return data_agg
 
 def main():
-    root = r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets"
-    GetBestResultsForVowelRecognitionDataset(root+'/LetterRecognition')
+    root = r"C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets"
+    #GetBestResultsForVowelRecognitionDataset(root+'/LetterRecognition')
     #PlotCrossValidationCurvesForSvm()
-    PlotCrossValidationCurvesForNNets()
-    # KnnAnalysis(root + r'\CreditScreeningDataset\Plots\knn', r'dt.creditscreening',
-    #             root + r"\CreditScreeningDataset\eval_agg.credit.knn_1_all.csv")
-    # KnnAnalysis(root + r'\LetterRecognition\Plots\knn', r'dt.vowelrecognition',
-                # root + r"\LetterRecognition\eval_agg.vowel.knn_1_all.csv")
+    #PlotCrossValidationCurvesForNNets()
+    # KnnAnalysis(root + r'/CreditScreeningDataset/Plots/knn', r'dt.creditscreening',
+    #             root + r"/CreditScreeningDataset/eval_agg.credit.knn_1_all.csv")
+    # KnnAnalysis(root + r'/LetterRecognition/Plots/knn', r'dt.vowelrecognition',
+                # root + r"/LetterRecognition/eval_agg.vowel.knn_1_all.csv")
 
-    DecisionTreeAnalysis(
-        root + r'\CreditScreeningDataset\Plots\dt', 
-        r'dt.creditscreening',
-        root + r"\CreditScreeningDataset\eval_agg.credit.dt_2_all.csv")
-    DecisionTreeAnalysis(
-        root + r'\LetterRecognition\Plots\dt', 
-        r'dt.vowelrecognition',
-        root + r"\LetterRecognition\eval_agg.vowel.dt_1_all.csv")
+    #DecisionTreeAnalysis(
+    #    root + r'/CreditScreeningDataset/Plots/dt', 
+    #    r'dt.creditscreening',
+    #    root + r"/CreditScreeningDataset/eval_agg.credit.dt_2_all.csv")
+    #DecisionTreeAnalysis(
+    #    root + r'/LetterRecognition/Plots/dt', 
+    #    r'dt.vowelrecognition',
+    #    root + r"/LetterRecognition/eval_agg.vowel.dt_1_all.csv")
 
 #Neural net Analysis : We ignore results corresponding to some min num of iterations
 # since for those the algorithm did not converge, mainly 8 or less iterations
-    #NNetAnalysis(
-    #    root + r'\CreditScreeningDataset\Plots\nnets',
-    #    'dt.creditscreening',
-    #    root + r'\CreditScreeningDataset\eval_agg.credit.nnet_1_all.csv',
-    #    8)
+    NNetAnalysis(
+        root + r'/CreditScreeningDataset/Plots/nnets',
+        'dt.creditscreening',
+        root + r'/CreditScreeningDataset/eval_agg.credit.nnet_2_all.csv',
+        0)
 
-    #NNetAnalysis(
-    #    root + r'\LetterRecognition\Plots\nnets',
-    #    'dt.vowelrecognition',
-    #    root + r'\LetterRecognition\eval_agg.vowel.nnet_1_all.csv',
-    #    8)
+    NNetAnalysis(
+        root + r'/LetterRecognition/Plots/nnets',
+        'dt.vowelrecognition',
+        root + r'/LetterRecognition/eval_agg.vowel.nnet_2_all.csv',
+        0)
 
 #Svm Analysis
-    SvmAnalysis(
-         root + r'\LetterRecognition\Plots\svm', 
-         r'dt.vowelrecognition.svm',
-         root + r"\LetterRecognition\eval_agg.vowel.svm_2_all.csv",
-         None)
+    #SvmAnalysis(
+    #     root + r'/LetterRecognition/Plots/svm', 
+    #     r'dt.vowelrecognition.svm',
+    #     root + r"/LetterRecognition/eval_agg.vowel.svm_2_all.csv",
+    #     None)
 
-    SvmAnalysis(
-         root + r'\CreditScreeningDataset\Plots\svm', 
-         r'dt.creditscreening.svm',
-         root + r"\CreditScreeningDataset\eval_agg.credit.svm_2_all.csv",
-         None)
+    #SvmAnalysis(
+    #     root + r'/CreditScreeningDataset/Plots/svm', 
+    #     r'dt.creditscreening.svm',
+    #     root + r"/CreditScreeningDataset/eval_agg.credit.svm_2_all.csv",
+    #     None)
 
 #Adaboost Analysis : First couple of functions generate plots showing how train/test error varies
 # as iterations increase. Last 2 functions plot learning curves for a fixed number of iterations
     AdaBoostAnalysis(
-                root + r'\CreditScreeningDataset\Plots\ada', 
+                root + r'/CreditScreeningDataset/Plots/ada/cv', 
                 'dt.creditscreening',
-                root + r"\CreditScreeningDataset\eval_agg.credit.ada_1_all.csv")
+                root + r"/CreditScreeningDataset/eval_agg.credit.ada_2_cv.csv")
     AdaBoostAnalysis(
-                root + r'\LetterRecognition\Plots\ada', 
+                root + r'/LetterRecognition/Plots/ada', 
                 'dt.vowelrecognition',
-                root + r"\LetterRecognition\eval_agg.vowel.ada_1_all.csv")
+                root + r"/LetterRecognition/eval_agg.vowel.ada_1_all.csv")
 
     DecisionTreeAnalysis(
-        root + r'\CreditScreeningDataset\Plots\ada_10_iters', 
+        root + r'/CreditScreeningDataset/Plots/ada_10_iters', 
         r'dt.creditscreening.ada_10_iters',
-        root + r"\CreditScreeningDataset\eval_agg.credit.ada_1_all.csv",
+        root + r"/CreditScreeningDataset/eval_agg.credit.ada_1_all.csv",
         lambda x : x['iter'] == 10)
 
     DecisionTreeAnalysis(
-        root + r'\LetterRecognition\Plots\ada_50_iters', 
+        root + r'/LetterRecognition/Plots/ada_50_iters', 
         r'dt.vowelrecognition.ada_50_iters',
-        root + r"\LetterRecognition\eval_agg.vowel.ada_1_all.csv",
+        root + r"/LetterRecognition/eval_agg.vowel.ada_1_all.csv",
         lambda x : x['iter'] == 50)
 
 if __name__ == '__main__':

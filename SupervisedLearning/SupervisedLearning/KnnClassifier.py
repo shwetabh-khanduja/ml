@@ -169,20 +169,20 @@ def RunKnnClassifierOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\
     metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
     keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','weights','neighbors','modelbuildtimesecs','modelevaltimesecs','best_neighbors','best_weights']
     classifier_fn = lambda x : RunKNNClassifier(x,positive_class_label=pos_class)
-    id="vowel.knn_3_all"
+    id="vowel.knn_3_0"
     algo_folder='knn'
     force_computation=True
-    exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
+    exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,["i-0"],force_computation)
 
 def RunKnnClassifierOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"):
 	pos_class="+"
 	metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
 	keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','weights','neighbors','modelbuildtimesecs','modelevaltimesecs','best_neighbors','best_weights']
 	classifier_fn = lambda x : RunKNNClassifier(x,['A1','A4','A5','A6','A7','A9','A10','A12','A13'],pos_class)
-	id="credit.knn_3_all"
+	id="credit.knn_3_0"
 	algo_folder='knn'
 	force_computation=True
-	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
+	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,["i-0"],force_computation)
 
 def main():
     RunKnnClassifierOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
