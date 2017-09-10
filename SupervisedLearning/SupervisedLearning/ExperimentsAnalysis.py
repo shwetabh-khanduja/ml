@@ -225,18 +225,15 @@ def SvmAnalysis(
 
     data_all = pd.read_csv(metrics_file)
     data_all['numsupportvectors'] = data_all['numsupportvectors'].apply(ComputeTotalSupportVectors)
-    dataset_types = ['train_split_percent_used',
-                     'imbalance_perc', 'noise_perc']
-    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
-        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std'], 'numsupportvectors': ['mean', 'std']}
+    dataset_types = ['train_split_percent_used']
+    col_funcs = {'p': ['mean'], 'r': ['mean'], 'f': [
+        'mean'], 'modelbuildtimesecs': ['mean']}
 
     mapping_output_words = {
         'p': 'Precision',
         'r': 'Recall',
         'f': 'F-Measure',
         dataset_types[0]: 'Train size % used',
-        dataset_types[1]: 'Fraction of postives to negatives',
-        dataset_types[2]: 'Noise %',
         'modelbuildtimesecs': 'Time to build model (sec)',
         'numsupportvectors': 'Number of Support Vectors'}
 
@@ -269,7 +266,7 @@ def SvmAnalysis(
                 output_file_name = u.PreparePath(
                     "{3}/{0}.{4}.{1}.{2}.png".format(output_file_prefix, k, agg, output_root, dataset_type))
                 f, ax = u.SaveDataPlotWithLegends(y_series, x, output_file_name,
-                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], 'SVM Performance ({0})'.format(agg))
+                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], 'SVM Performance'.format(agg))
     return data_agg
 
 def PlotCrossValidationCurvesForNNets():
@@ -551,18 +548,15 @@ def NNetAnalysis(
     metrics_file,
     iters_to_ignore):
     data_all = pd.read_csv(metrics_file)
-    dataset_types = ['train_split_percent_used',
-                     'imbalance_perc', 'noise_perc']
-    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
-        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std']}
+    dataset_types = ['train_split_percent_used']
+    col_funcs = {'p': ['mean'], 'r': ['mean'], 'f': [
+        'mean'], 'modelbuildtimesecs': ['mean']}
 
     mapping_output_words = {
         'p': 'Precision',
         'r': 'Recall',
         'f': 'F-Measure',
         dataset_types[0]: 'Train size % used',
-        dataset_types[1]: 'Fraction of postives to negatives',
-        dataset_types[2]: 'Noise %',
         'modelbuildtimesecs': 'Time to build model (sec)'}
 
     for dataset_type in dataset_types:
@@ -609,11 +603,11 @@ def NNetAnalysis(
                 output_file_name = u.PreparePath(
                     "{3}/{0}.{4}.{1}.{2}.png".format(output_file_prefix, k, agg, output_root, dataset_type))
                 f, ax = u.SaveDataPlotWithLegends([y_test_earlystopping, y_no_test_earlystopping, y_train_no_earlystopping, y_train_earlystopping], x, output_file_name,
-                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], 'Neural Nets Performance ({0})'.format(agg))
+                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], 'Neural Nets Performance'.format(agg))
     return data_agg
 
 def main():
-    root = r"C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets"
+    root = r"C:/Users/shwet/OneDrive/Gatech/Courses/ML/DataSets"
     #GetBestResultsForVowelRecognitionDataset(root+'/LetterRecognition')
     #PlotCrossValidationCurvesForSvm()
     #PlotCrossValidationCurvesForNNets()
@@ -633,30 +627,30 @@ def main():
 
 #Neural net Analysis : We ignore results corresponding to some min num of iterations
 # since for those the algorithm did not converge, mainly 8 or less iterations
-    NNetAnalysis(
-        root + r'/CreditScreeningDataset/Plots/nnets',
-        'dt.creditscreening',
-        root + r'/CreditScreeningDataset/eval_agg.credit.nnet_2_all.csv',
-        0)
+    # NNetAnalysis(
+    #     root + r'/CreditScreeningDataset/Plots/nnets',
+    #     'dt.creditscreening',
+    #     root + r'/CreditScreeningDataset/eval_agg.credit.nnet_3_0.csv',
+    #     0)
 
-    NNetAnalysis(
-        root + r'/LetterRecognition/Plots/nnets',
-        'dt.vowelrecognition',
-        root + r'/LetterRecognition/eval_agg.vowel.nnet_2_all.csv',
-        0)
+    # NNetAnalysis(
+    #     root + r'/LetterRecognition/Plots/nnets',
+    #     'dt.vowelrecognition',
+    #     root + r'/LetterRecognition/eval_agg.vowel.nnet_3_0.csv',
+    #     0)
 
-#Svm Analysis
-    #SvmAnalysis(
-    #     root + r'/LetterRecognition/Plots/svm', 
-    #     r'dt.vowelrecognition.svm',
-    #     root + r"/LetterRecognition/eval_agg.vowel.svm_2_all.csv",
-    #     None)
+# Svm Analysis
+    SvmAnalysis(
+        root + r'/LetterRecognition/Plots/svm', 
+        r'dt.vowelrecognition.svm',
+        root + r"/LetterRecognition/eval_agg.vowel.svm_3_0.csv",
+        None)
 
-    #SvmAnalysis(
-    #     root + r'/CreditScreeningDataset/Plots/svm', 
-    #     r'dt.creditscreening.svm',
-    #     root + r"/CreditScreeningDataset/eval_agg.credit.svm_2_all.csv",
-    #     None)
+    SvmAnalysis(
+        root + r'/CreditScreeningDataset/Plots/svm', 
+        r'dt.creditscreening.svm',
+        root + r"/CreditScreeningDataset/eval_agg.credit.svm_3_0.csv",
+        None)
 
 #Adaboost Analysis : First couple of functions generate plots showing how train/test error varies
 # as iterations increase. Last 2 functions plot learning curves for a fixed number of iterations

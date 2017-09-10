@@ -173,8 +173,8 @@ def RunNeuralNetsOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gate
 	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,["i-0"],force_computation,evaluate_only=True)
 
 def main():
-	RunNeuralNetsOnVowelRecognitionDataset(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
-	RunNeuralNetsOnCreditScreeningDataset(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
+	RunNeuralNetsOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
+	RunNeuralNetsOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
 
 if __name__ == "__main__":
 	main()

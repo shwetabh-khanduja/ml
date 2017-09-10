@@ -129,20 +129,20 @@ def RunSvmClassifierOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\
     metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
     keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','kernel','C','gamma','degree','modelbuildtimesecs','modelevaltimesecs','numsupportvectors']
     classifier_fn = lambda x : RunSVMClassifier(x,positive_class_label=pos_class)
-    id="vowel.svm_2_all"
+    id="vowel.svm_3_0"
     algo_folder='svm'
     force_computation=True
-    exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
+    exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,["i-0"],force_computation,evaluate_only=True)
 
 def RunSvmClassifierOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"):
     pos_class="+"
     metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
     keys_to_keep=['dataset_instance','test_split','train_split','random_state','noise_perc','train_split_percent_used','imbalance_perc','kernel','C','gamma','degree','modelbuildtimesecs','modelevaltimesecs','numsupportvectors']
     classifier_fn = lambda x : RunSVMClassifier(x,['A1','A4','A5','A6','A7','A9','A10','A12','A13'],pos_class)
-    id="credit.svm_2_all"
+    id="credit.svm_3_0"
     algo_folder='svm'
     force_computation=True
-    exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,[],force_computation)
+    exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,["i-0"],force_computation,evaluate_only=True)
 
 def main():
     RunSvmClassifierOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
