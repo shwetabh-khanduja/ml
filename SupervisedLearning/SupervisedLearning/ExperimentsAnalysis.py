@@ -6,6 +6,7 @@ import os
 from sklearn.model_selection import ParameterGrid
 import SupervisedLearning as sl
 import random
+import ast
 
 def TestPlotting():
     y1 = u.YSeries(np.arange(10) * 2, line_style='-',
@@ -91,10 +92,9 @@ def KnnAnalysis(
     metrics_file
     ):
     data_all = pd.read_csv(metrics_file)
-    dataset_types = ['train_split_percent_used',
-                     'imbalance_perc', 'noise_perc']
-    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
-        'mean', 'std'], 'modelevaltimesecs': ['mean', 'std']}
+    dataset_types = ['train_split_percent_used']
+    col_funcs = {'p': ['mean'], 'r': ['mean'], 'f': [
+        'mean'], 'modelevaltimesecs': ['mean']}
 
     mapping_output_words = {
         'p': 'Precision',
@@ -134,7 +134,7 @@ def KnnAnalysis(
                 output_file_name = u.PreparePath(
                     "{4}/{0}.{1}.weighted.{2}.{3}.png".format(output_file_prefix, dataset_type, k, agg, output_root))
                 f, ax = u.SaveDataPlotWithLegends(y_series, x, output_file_name,
-                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], 'K Nearest Neighbor ({0})'.format(agg))
+                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], 'K Nearest Neighbor'.format(agg))
 
                 data_for_distance_based_weighting = FilterRows(
                     data_agg, uniform_weights_filter)
@@ -147,7 +147,7 @@ def KnnAnalysis(
                 output_file_name = u.PreparePath(
                     "{4}/{0}.{1}.uniform.{2}.{3}.png".format(output_file_prefix, dataset_type, k, agg, output_root))
                 f, ax = u.SaveDataPlotWithLegends(y_series, x, output_file_name,
-                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], 'K Nearest Neighbor ({0})'.format(agg))
+                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], 'K Nearest Neighbor'.format(agg))
     return data_agg
 
 def DecisionTreeAnalysis(
@@ -214,6 +214,56 @@ def DecisionTreeAnalysis(
                                                   True, mapping_output_words[dataset_type], mapping_output_words[k], 'Decision Trees Performance ({0})'.format(agg))
     return data_agg
 
+def KnnAnalysisOptK(
+        output_root,
+        output_file_prefix,
+        metrics_file,
+        dataset_filter_fn = None):
+
+    data_all = pd.read_csv(metrics_file)
+    dataset_types = ['train_split_percent_used']
+    col_funcs = {'p': ['mean'], 'r': ['mean'], 'f': [
+        'mean'], 'modelevaltimesecs': ['mean']}
+
+    mapping_output_words = {
+        'p': 'Precision',
+        'r': 'Recall',
+        'f': 'F-Measure',
+        dataset_types[0]: 'Train size % used',
+        'modelevaltimesecs': 'Time to build model (sec)'}
+
+    for dataset_type in dataset_types:
+
+        def filter_query(x): return ~np.isnan(x[dataset_type])
+
+        def train_filter(x): return (x['istrain'] == 1)
+
+        def test_filter(x): return (x['istrain'] == 0)
+
+        if(dataset_filter_fn is not None):
+            data_all = FilterRows(data_all, dataset_filter_fn)
+        data = FilterRows(data_all, filter_query)
+        data_agg = GetAggMetrics(data, col_funcs=col_funcs, gpby=[
+            dataset_type, 'istrain'])
+        x = data_agg[dataset_type].unique()
+
+        for k, v in col_funcs.items():
+            for agg in v:
+                y_train = u.YSeries(FilterRows(data_agg, train_filter)[k + "_" + agg], line_color='r',
+                                          points_marker='o', plot_legend_label="Train")
+                y_test = u.YSeries(FilterRows(data_agg, test_filter)[k + "_" + agg], line_color='b',
+                                         points_marker='o', plot_legend_label="Test")
+                if((k=='modelevaltimesecs')):
+                    y_series = [y_train]
+                else:
+                    y_series = [y_test, y_train]
+
+                output_file_name = u.PreparePath(
+                    "{3}/{0}.{4}.{1}.{2}.png".format(output_file_prefix, k, agg, output_root, dataset_type))
+                f, ax = u.SaveDataPlotWithLegends(y_series, x, output_file_name,
+                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], 'Knn Performance')
+    return data_agg
+
 def SvmAnalysis(
         output_root,
         output_file_prefix,
@@ -269,51 +319,129 @@ def SvmAnalysis(
                                                   True, mapping_output_words[dataset_type], mapping_output_words[k], 'SVM Performance'.format(agg))
     return data_agg
 
-def PlotCrossValidationCurvesForNNets():
-    #root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition'
-    root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/CreditScreeningDataset'
-    instance = r'i-0_t-80_T-20'
-    stopping = 'earlyStop-False'
-    dataset_instance_root = root + '/' + instance
-    plot_output_file = root+ r'/Plots/nnets/cv.{0}.nnets.{1}.png'.format(stopping, instance)
-    cv_save_file = dataset_instance_root + "/nnets.{0}.{1}.model_complexity_curves.csv".format(instance,stopping)
-    x_axis_name = 'Train size % used'
-    parameter_name = 'train_split_percent_used'
-    y_axis_name = 'F-Measure'
-    title = 'CV Peformance'
-    def parameter_getter(path):
-        paramfile = "{0}/nnets/{1}/{1}.params.txt".format(path,stopping)
-        params_info = u.ReadLinesFromFile(paramfile)
-        params_info_dict=sl.GetDictionary(params_info)
-        return int(params_info_dict[parameter_name])
+def PlotCrossValidationCurvesForNNets(rootfolder):
+    
+    roots = [rootfolder + r'/CreditScreeningDataset',rootfolder + r'/LetterRecognition']
+    for root in roots:
+        instance = r'i-0_t-80_T-20'
+        stopping = 'earlystop-False'
+        dataset_instance_root = root + '/' + instance
+        plot_output_file = u.PreparePath(root+ r'/Plots/nnets/cv.{0}.nnets.{1}.png'.format(stopping, instance))
+        cv_save_file = u.PreparePath(dataset_instance_root + "/nnets.{0}.{1}.model_complexity_curves.csv".format(instance,stopping))
+        x_axis_name = 'Train size % used'
+        parameter_name = 'train_split_percent_used'
+        y_axis_name = 'F-Measure'
+        title = 'CV Peformance'
+        def parameter_getter(path):
+            paramfile = "{0}/nnets/{1}/{1}.params.txt".format(path,stopping)
+            params_info = u.ReadLinesFromFile(paramfile)
+            params_info_dict=sl.GetDictionary(params_info)
+            return int(params_info_dict[parameter_name])
 
-    def cv_getter(path):
-        return "{0}/nnets/{1}/{1}.grid_search_cv_results.csv".format(path,stopping)
+        def cv_getter(path):
+            return "{0}/nnets/{1}/{1}.grid_search_cv_results.csv".format(path,stopping)
 
-    PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,cv_save_file)
-    plot_fn = lambda x : (("0.0001" in x) | ("0.0001" in x)) & (("70" in x) | ("50" in x))
-    plot_output_file = root+ r'/Plots/nnets/cv.small.{0}.nnets.{1}.png'.format(stopping, instance)
-    PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,should_plot = plot_fn)
+        PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,cv_save_file)
+        plot_fn = lambda x : (("0.0001" in x) | ("0.0001" in x)) & (("70" in x) | ("50" in x))
+        plot_output_file = root+ r'/Plots/nnets/cv.small.{0}.nnets.{1}.png'.format(stopping, instance)
+        PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,should_plot=plot_fn)
 
-def PlotCrossValidationCurvesForSvm():
-    root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition'
+def PlotCrossValidationCurvesForSvm(rootfolder):
+    # root = r'C:/Users/shwet/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition'
     #root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/CreditScreeningDataset'
-    instance = r'i-0_t-80_T-20'
-    dataset_instance_root = root + "/" + instance
-    plot_output_file = root+ r'/Plots/svm/cv.svm.{0}.png'.format(instance)
-    cv_save_file = dataset_instance_root + "/svm.{0}.model_complexity_curves.csv".format(instance)
-    x_axis_name = 'Train size % used'
-    y_axis_name = 'F-Measure'
-    title = 'CV Peformance'
-    def parameter_getter(path):
-        paramfile = "{0}/svm/cvresults/cvresults.params.txt".format(path)
-        params_info = u.ReadLinesFromFile(paramfile)
-        params_info_dict=sl.GetDictionary(params_info)
-        return int(params_info_dict['train_split_percent_used'])
+    roots = [rootfolder + r'/CreditScreeningDataset',rootfolder + r'/LetterRecognition']
+    for root in roots:    
+        instance = r'i-0_t-80_T-20'
+        dataset_instance_root = root + "/" + instance
+        plot_output_file = u.PreparePath(root+ r'/Plots/svm/cv.svm.{0}.png'.format(instance))
+        cv_save_file = u.PreparePath(dataset_instance_root + "/svm.{0}.model_complexity_curves.csv".format(instance))
+        x_axis_name = 'Train size % used'
+        y_axis_name = 'F-Measure'
+        title = 'CV Peformance'
+        def parameter_getter(path):
+            paramfile = "{0}/svm/cvresults/cvresults.params.txt".format(path)
+            params_info = u.ReadLinesFromFile(paramfile)
+            params_info_dict=sl.GetDictionary(params_info)
+            return int(params_info_dict['train_split_percent_used'])
 
-    def cv_getter(path):
-        return "{0}/svm/cvresults/cvresults.grid_search_cv_results.csv".format(path)
-    PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,cv_save_file)
+        def cv_getter(path):
+            return "{0}/svm/cvresults/cvresults.grid_search_cv_results.csv".format(path)
+        PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,cv_save_file)
+
+def PlotCrossValidationCurvesForKnn(rootfolder):
+    # root = r'C:/Users/shwet/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition'
+    #root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/CreditScreeningDataset'
+    roots = [rootfolder + r'/CreditScreeningDataset',rootfolder + r'/LetterRecognition']
+    for root in roots:    
+        instance = r'i-0_t-80_T-20'
+        dataset_instance_root = root + "/" + instance
+        plot_output_file = u.PreparePath(root+ r'/Plots/knn/cv.knn.{0}.png'.format(instance))
+        cv_save_file = u.PreparePath(dataset_instance_root + "/knn.{0}.model_complexity_curves.csv".format(instance))
+        x_axis_name = 'Train size % used'
+        y_axis_name = 'F-Measure'
+        title = 'CV Peformance'
+        def parameter_getter(path):
+            paramfile = "{0}/knn/weights-uniform_neighbors--1/weights-uniform_neighbors--1.params.txt".format(path)
+            params_info = u.ReadLinesFromFile(paramfile)
+            params_info_dict=sl.GetDictionary(params_info)
+            return int(params_info_dict['train_split_percent_used'])
+
+        def knn_label_maker(l):
+            p = ast.literal_eval(l)
+            return "n{0}w{1}".format(p['n_neighbors'],p['weights'][0])
+        def cv_getter(path):
+            return "{0}/knn/weights-uniform_neighbors--1/weights-uniform_neighbors--1.grid_search_cv_results.csv".format(path)
+        PlotCrossValidationCurves2(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,cv_save_file,label_maker=knn_label_maker)    
+
+def PlotCrossValidationCurves2(
+    dataset_instance_root,
+    plot_output_file,
+    x_axis_name,
+    y_axis_name,
+    title,
+    parameter_value_getter_fn,
+    cv_results_file_getter_fn,
+    cv_save_file=None,
+    should_plot = lambda x : True,
+    label_maker = lambda x : x):
+    grid = ParameterGrid([{'marker':['o','x','d','^','+','v','8','s','p','>','<'], 'color':['orange','red','blue','green','black','saddlebrown','violet','darkcyan','maroon','lightcoral']}])
+    combinations = [p for p in grid]
+    random.seed(30)
+    random.shuffle(combinations)
+    param_dict = {}
+    x_value_dict = {}
+    for parameter_value_dataset in u.Get_Subdirectories(dataset_instance_root):
+        cv_file_path = cv_results_file_getter_fn(parameter_value_dataset)
+        if(os.path.isfile(cv_file_path) == False):
+            continue
+        cv_results = pd.read_csv(cv_file_path)
+        parameter_value = parameter_value_getter_fn(parameter_value_dataset)
+        for i in range(len(cv_results)):
+            #param_dict = {param1 : series_1}
+            param = cv_results.iloc[i]['params']
+            s = pd.Series({parameter_value : cv_results.iloc[i]['mean_test_score']})
+            if param in param_dict:
+                param_dict[param] = param_dict[param].append(s)
+            else:
+                param_dict[param] = s
+    yseries = []
+    x = []
+    for name,value in param_dict.items():
+        if(should_plot(name) == False):
+            continue
+        theme = combinations.pop()
+        y = u.YSeries(value.sort_index().values,points_marker=theme['marker'],line_color=theme['color'],plot_legend_label=name)
+        yseries.append(y)
+        x = value.sort_index().index
+    transpose_data = pd.DataFrame(param_dict).transpose()
+    x_values = transpose_data.index.values
+    x_values = list(map(label_maker,x_values))
+    col = transpose_data.columns[0]
+    y_values = transpose_data[col]
+    yseries = [u.YSeries(y_values)]
+    u.SaveDataPlotWithLegends(yseries,x_values,plot_output_file,True,x_axis_name,y_axis_name)
+    if(cv_save_file is not None):
+        pd.DataFrame(param_dict).transpose().to_csv(cv_save_file)
 
 def PlotCrossValidationCurves(
     dataset_instance_root,
@@ -332,7 +460,10 @@ def PlotCrossValidationCurves(
     param_dict = {}
     x_value_dict = {}
     for parameter_value_dataset in u.Get_Subdirectories(dataset_instance_root):
-        cv_results = pd.read_csv(cv_results_file_getter_fn(parameter_value_dataset))
+        cv_file_path = cv_results_file_getter_fn(parameter_value_dataset)
+        if(os.path.isfile(cv_file_path) == False):
+            continue
+        cv_results = pd.read_csv(cv_file_path)
         parameter_value = parameter_value_getter_fn(parameter_value_dataset)
         for i in range(len(cv_results)):
             #param_dict = {param1 : series_1}
@@ -609,8 +740,16 @@ def NNetAnalysis(
 def main():
     root = r"C:/Users/shwet/OneDrive/Gatech/Courses/ML/DataSets"
     #GetBestResultsForVowelRecognitionDataset(root+'/LetterRecognition')
-    #PlotCrossValidationCurvesForSvm()
-    #PlotCrossValidationCurvesForNNets()
+    PlotCrossValidationCurvesForKnn(root)
+    PlotCrossValidationCurvesForSvm(root)
+    PlotCrossValidationCurvesForNNets(root)
+
+    
+    KnnAnalysisOptK(root + r'/CreditScreeningDataset/Plots/knn', r'dt.creditscreening',
+                root + r"/CreditScreeningDataset/eval_agg.credit.knn_3_0.csv")
+    KnnAnalysisOptK(root + r'/LetterRecognition/Plots/knn', r'dt.vowelrecognition',
+                root + r"/LetterRecognition/eval_agg.vowel.knn_3_0.csv")
+
     # KnnAnalysis(root + r'/CreditScreeningDataset/Plots/knn', r'dt.creditscreening',
     #             root + r"/CreditScreeningDataset/eval_agg.credit.knn_1_all.csv")
     # KnnAnalysis(root + r'/LetterRecognition/Plots/knn', r'dt.vowelrecognition',
@@ -627,17 +766,17 @@ def main():
 
 #Neural net Analysis : We ignore results corresponding to some min num of iterations
 # since for those the algorithm did not converge, mainly 8 or less iterations
-    # NNetAnalysis(
-    #     root + r'/CreditScreeningDataset/Plots/nnets',
-    #     'dt.creditscreening',
-    #     root + r'/CreditScreeningDataset/eval_agg.credit.nnet_3_0.csv',
-    #     0)
+    NNetAnalysis(
+        root + r'/CreditScreeningDataset/Plots/nnets',
+        'dt.creditscreening',
+        root + r'/CreditScreeningDataset/eval_agg.credit.nnet_3_0.csv',
+        0)
 
-    # NNetAnalysis(
-    #     root + r'/LetterRecognition/Plots/nnets',
-    #     'dt.vowelrecognition',
-    #     root + r'/LetterRecognition/eval_agg.vowel.nnet_3_0.csv',
-    #     0)
+    NNetAnalysis(
+        root + r'/LetterRecognition/Plots/nnets',
+        'dt.vowelrecognition',
+        root + r'/LetterRecognition/eval_agg.vowel.nnet_3_0.csv',
+        0)
 
 # Svm Analysis
     SvmAnalysis(
@@ -654,26 +793,26 @@ def main():
 
 #Adaboost Analysis : First couple of functions generate plots showing how train/test error varies
 # as iterations increase. Last 2 functions plot learning curves for a fixed number of iterations
-    AdaBoostAnalysis(
-                root + r'/CreditScreeningDataset/Plots/ada/cv', 
-                'dt.creditscreening',
-                root + r"/CreditScreeningDataset/eval_agg.credit.ada_2_cv.csv")
-    AdaBoostAnalysis(
-                root + r'/LetterRecognition/Plots/ada', 
-                'dt.vowelrecognition',
-                root + r"/LetterRecognition/eval_agg.vowel.ada_1_all.csv")
+    # AdaBoostAnalysis(
+    #             root + r'/CreditScreeningDataset/Plots/ada/cv', 
+    #             'dt.creditscreening',
+    #             root + r"/CreditScreeningDataset/eval_agg.credit.ada_2_cv.csv")
+    # AdaBoostAnalysis(
+    #             root + r'/LetterRecognition/Plots/ada', 
+    #             'dt.vowelrecognition',
+    #             root + r"/LetterRecognition/eval_agg.vowel.ada_1_all.csv")
 
-    DecisionTreeAnalysis(
-        root + r'/CreditScreeningDataset/Plots/ada_10_iters', 
-        r'dt.creditscreening.ada_10_iters',
-        root + r"/CreditScreeningDataset/eval_agg.credit.ada_1_all.csv",
-        lambda x : x['iter'] == 10)
+    # DecisionTreeAnalysis(
+    #     root + r'/CreditScreeningDataset/Plots/ada_10_iters', 
+    #     r'dt.creditscreening.ada_10_iters',
+    #     root + r"/CreditScreeningDataset/eval_agg.credit.ada_1_all.csv",
+    #     lambda x : x['iter'] == 10)
 
-    DecisionTreeAnalysis(
-        root + r'/LetterRecognition/Plots/ada_50_iters', 
-        r'dt.vowelrecognition.ada_50_iters',
-        root + r"/LetterRecognition/eval_agg.vowel.ada_1_all.csv",
-        lambda x : x['iter'] == 50)
+    # DecisionTreeAnalysis(
+    #     root + r'/LetterRecognition/Plots/ada_50_iters', 
+    #     r'dt.vowelrecognition.ada_50_iters',
+    #     root + r"/LetterRecognition/eval_agg.vowel.ada_1_all.csv",
+    #     lambda x : x['iter'] == 50)
 
 if __name__ == '__main__':
     main()

@@ -48,39 +48,45 @@ def SaveDataPlotWithLegends(YSeries_array,
                  title="",
                  legend_loc = 2):
 
-	# https://stackoverflow.com/questions/8409095/matplotlib-set-markers-for-individual-points-on-a-line
-	fig, ax1 = plt.subplots()
-	legends = []
-	for y in YSeries_array:
-		ax1.plot(x, y.values, linestyle=y.line_style,
-					color=y.line_color, marker=y.points_marker)
-		legends.append(
-			mlines.Line2D([], [],
-							color=y.line_color,
-							linestyle='',
-							marker=y.points_marker,
-							label=y.plot_legend_label))
+    # https://stackoverflow.com/questions/8409095/matplotlib-set-markers-for-individual-points-on-a-line
+    fig, ax1 = plt.subplots()
+    legends = []
+    for y in YSeries_array:
+        if(type(x[0]) == str):
+            x_values = np.arange(len(x))
+            plt.xticks(x_values,x)
+        else:
+            x_values = x
+        ax1.plot(x_values, y.values, linestyle=y.line_style,
+                    color=y.line_color, marker=y.points_marker)
+        if(y.plot_legend_label is not None):
+            legends.append(
+                mlines.Line2D([], [],
+                                color=y.line_color,
+                                linestyle='',
+                                marker=y.points_marker,
+                                label=y.plot_legend_label))
 
-	ax1.set_xlabel(x_axis_name)
-	ax1.set_ylabel(y1_axis_name)
-	if(len(legends) > 0):
-		lgd = plt.legend(handles=legends,bbox_to_anchor=(1, 1),loc=legend_loc)
+    ax1.set_xlabel(x_axis_name)
+    ax1.set_ylabel(y1_axis_name)
+    if(len(legends) > 0):
+        lgd = plt.legend(handles=legends,bbox_to_anchor=(1, 1),loc=legend_loc)
 
-	if(title != "" or title is not None):
-		plt.title(title)
+    if(title != "" or title is not None):
+        plt.title(title)
 
-	if filename is not None:
-		if(len(legends) > 0):
-			fig.savefig(filename,bbox_extra_artists=(lgd,), bbox_inches='tight')
-		else:
-			fig.savefig(filename)
-		
+    if filename is not None:
+        if(len(legends) > 0):
+            fig.savefig(filename,bbox_extra_artists=(lgd,), bbox_inches='tight')
+        else:
+            fig.savefig(filename)
+        
 
-	if dispose_fig is True:
-		plt.close(fig)
-		return [None, None]
-	else:
-		return [fig, ax1]
+    if dispose_fig is True:
+        plt.close(fig)
+        return [None, None]
+    else:
+        return [fig, ax1]
 
 def SaveDataPlot(y1,
                  y2=None,
