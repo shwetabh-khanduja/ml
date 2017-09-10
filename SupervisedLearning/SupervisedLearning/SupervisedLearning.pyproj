@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>60429092-0e9d-44b6-8f5e-e1e0b856ff3f</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Adaboost.py</StartupFile>
+    <StartupFile>NeuralNetwork.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>

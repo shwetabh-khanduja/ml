@@ -15,7 +15,8 @@ def RunNEvaluateExperimentsOnDataSet(
         positive_class,
         datasets_to_run_on=[],
         force=False,
-        should_eval_dir = lambda x : True):
+        should_eval_dir = lambda x : True,
+        evaluate_only = False):
     """
     classifier_fn : This is the main classifier function that is called by passing in 
                     the dataset
@@ -65,7 +66,8 @@ def RunNEvaluateExperimentsOnDataSet(
             if(force == False):
                 continue
         # this root is for the various configs of the dataset
-        classifer_fn(dataset)
+        if(evaluate_only == False):
+            classifer_fn(dataset)
         EvaluateExperiments(dataset, params_to_keep, positive_class,
                             metric_calculation_fn, eval_file, algo_folder,should_eval_dir)
     df = None
