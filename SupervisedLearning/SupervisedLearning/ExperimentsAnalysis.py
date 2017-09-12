@@ -154,21 +154,19 @@ def DecisionTreeAnalysis(
         output_root,
         output_file_prefix,
         metrics_file,
-        dataset_filter_fn = None):
+        dataset_filter_fn = None,
+        plt_title = "Decision Trees Performance"):
 
     data_all = pd.read_csv(metrics_file)
-    dataset_types = ['train_split_percent_used',
-                     'imbalance_perc', 'noise_perc']
-    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
-        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std']}
+    dataset_types = ['train_split_percent_used']
+    col_funcs = {'p': ['mean'], 'r': ['mean'], 'f': [
+        'mean'], 'modelbuildtimesecs': ['mean']}
 
     mapping_output_words = {
         'p': 'Precision',
         'r': 'Recall',
         'f': 'F-Measure',
         dataset_types[0]: 'Train size % used',
-        dataset_types[1]: 'Fraction of postives to negatives',
-        dataset_types[2]: 'Noise %',
         'modelbuildtimesecs': 'Time to build model (sec)'}
 
     for dataset_type in dataset_types:
@@ -211,7 +209,7 @@ def DecisionTreeAnalysis(
                 output_file_name = u.PreparePath(
                     "{3}/{0}.{4}.{1}.{2}.png".format(output_file_prefix, k, agg, output_root, dataset_type))
                 f, ax = u.SaveDataPlotWithLegends(y_series, x, output_file_name,
-                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], 'Decision Trees Performance ({0})'.format(agg))
+                                                  True, mapping_output_words[dataset_type], mapping_output_words[k], plt_title)
     return data_agg
 
 def KnnAnalysisOptK(
@@ -367,6 +365,23 @@ def PlotCrossValidationCurvesForSvm(rootfolder):
         def cv_getter(path):
             return "{0}/svm/cvresults/cvresults.grid_search_cv_results.csv".format(path)
         PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,cv_save_file)
+def PlotCrossValidationCurvesForWeka(
+    cv_file,
+    model_complexity_param_name,
+    metric_name,
+    plt_output_file,
+    title,
+    x_axis_name,
+    y_axis_name,
+    rows_filter_fn = None):
+    data = pd.read_csv(cv_file)
+    if(rows_filter_fn is not None):
+        data = FilterRows(data,rows_filter_fn)
+    metric_vals = data[[model_complexity_param_name,metric_name]].set_index(model_complexity_param_name).sort_index()
+    x = metric_vals.index
+    y = metric_vals[metric_name]
+    y = u.YSeries(y)
+    u.SaveDataPlotWithLegends([y],x,plt_output_file,True,x_axis_name,y_axis_name,title)
 
 def PlotCrossValidationCurvesForKnn(rootfolder):
     # root = r'C:/Users/shwet/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition'
@@ -377,7 +392,7 @@ def PlotCrossValidationCurvesForKnn(rootfolder):
         dataset_instance_root = root + "/" + instance
         plot_output_file = u.PreparePath(root+ r'/Plots/knn/cv.knn.{0}.png'.format(instance))
         cv_save_file = u.PreparePath(dataset_instance_root + "/knn.{0}.model_complexity_curves.csv".format(instance))
-        x_axis_name = 'Train size % used'
+        x_axis_name = 'Model complexity'
         y_axis_name = 'F-Measure'
         title = 'CV Peformance'
         def parameter_getter(path):

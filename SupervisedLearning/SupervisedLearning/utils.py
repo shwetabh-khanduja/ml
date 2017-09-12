@@ -5,6 +5,7 @@ import matplotlib.lines as mlines
 import random
 from sklearn.model_selection import ParameterGrid
 import pandas as pd
+import pickle
 
 def WriteTextToFile(file, text):
     f = open(file, 'w')
@@ -238,6 +239,14 @@ def GetMarkerColorCombinations(seed = 0):
     random.seed(seed)
     random.shuffle(combinations)
     return combinations
+
+def WriteBinaryFile(filename, binobj):
+    with open(filename, 'wb') as handle:
+        pickle.dump(binobj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+def ReadBinaryFile(filename):
+    with open(filename, 'rb') as handle:
+        return pickle.load(handle)
 
 class YSeries():
     def __init__(self, values, line_style='-', points_marker='o', line_color='r', plot_legend_label=None):

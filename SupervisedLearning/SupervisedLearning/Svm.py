@@ -20,7 +20,11 @@ def GetIdForConfig(config):
 def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_class_label=None, cv_file = None):
     file_extn = "csv"
     testfiles = glob.glob("{0}/*.test.{1}".format(datasets_root_folder, file_extn))
+    first = True
     for dataset_dir in u.Get_Subdirectories(datasets_root_folder):
+        if(first):
+            assert("ts-100" in dataset_dir)
+            first = False
         trainfile = glob.glob("{0}/*.train.{1}".format(dataset_dir, file_extn))[0]
         paramfile = glob.glob("{0}/*.params.txt".format(dataset_dir))[0]
         dt_root = u.PreparePath(dataset_dir + "/svm", is_file=False)
@@ -76,6 +80,8 @@ def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_
                 "{0}/{1}.test.predictions.csv".format(run_output_dir, id))
             cv_results_file=u.PreparePath(
                 "{0}/{1}.grid_search_cv_results.csv".format(run_output_dir,id))
+            model_output_file = u.PreparePath(
+                "{0}/{1}.model".format(run_output_dir, id))
 
             if(_D is not None):
                 _D.to_csv(cv_results_file)
@@ -113,7 +119,7 @@ def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_
             train_predicted_Y = classifier.predict(X)
             output = pd.DataFrame({"actual":Y,"predicted":train_predicted_Y})
             output.to_csv(train_output_file,index=False)
-
+            u.WriteBinaryFile(model_output_file,classifier)
             # now for test set
             config["predictionoutputfile"] = test_output_file
         

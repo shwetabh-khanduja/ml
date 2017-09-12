@@ -35,6 +35,8 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 			train_output_file=u.PreparePath("{0}/{1}.train.predictions.csv".format(run_output_dir,id))
 			test_output_file=u.PreparePath("{0}/{1}.test.predictions.csv".format(run_output_dir,id))
 			cv_results_file=u.PreparePath("{0}/{1}.grid_search_cv_results.csv".format(run_output_dir,id))
+			model_output_file = u.PreparePath(
+                "{0}/{1}.model".format(run_output_dir, id))
 			# if(os.path.isfile(cv_results_file)):
 			# 	config = config_gen.GetNextConfigAlongWithIdentifier()
 			# 	continue
@@ -139,6 +141,8 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 
 			# now for test set
 			config["predictionoutputfile"] = test_output_file
+
+			u.WriteBinaryFile(model_output_file, classifier)
 			
 			#test_X,test_Y = PrepareDataAndLabel(data,positive_class_label,one_hot_encoding_cols)
 			predicted_Y = classifier.predict(test_X)

@@ -78,6 +78,8 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
                 "{0}/{1}.test.predictions.csv".format(run_output_dir, id))
             cv_results_file=u.PreparePath(
                 "{0}/{1}.grid_search_cv_results.csv".format(run_output_dir,id))
+            model_output_file = u.PreparePath(
+                "{0}/{1}.model".format(run_output_dir, id))
             if(cv_file is not None):
                 cv_file = cv_file
             if(_D is not None):
@@ -128,6 +130,7 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
             start = time.clock()
             predicted_Y = classifier.predict(test_X)
             end = time.clock()
+            u.WriteBinaryFile(model_output_file,classifier)
             config["modelevaltimesecs"] = end-start
             output = pd.DataFrame({"actual":test_Y,"predicted":predicted_Y})
             output.to_csv(test_output_file,index=False)

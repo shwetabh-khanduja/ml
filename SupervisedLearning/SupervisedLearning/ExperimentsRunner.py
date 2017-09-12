@@ -95,6 +95,8 @@ def EvaluateExperiments(
     for directory in u.Get_Subdirectories(datasets_root_folder):
         # each directory is a dataset directory
         dt_output_dir = "{0}/{1}".format(directory, algo_folder)
+        if(os.path.isdir(dt_output_dir) == False):
+            continue
         for run_output_folder in u.Get_Subdirectories(dt_output_dir):
             if(should_eval(run_output_folder) == False):
                 print("ignoring : {0}".format(run_output_folder))

@@ -90,8 +90,14 @@ def GenerateDatasetSplits(
 	"""
 	dataset_root = u.PreparePath("{0}/i-{1}_t-{2}_T-{3}".format(rootFolder,dataset_folder_prefix,train_ratio,test_ratio))
 	train,test,validation = CreateTrainTestAndValidationPartitions(dataset,class_col,train_ratio/100,test_ratio/100,random_state,validation_ratio/100)
-	test_output_file_csv = u.PreparePath("{0}/i-{1}.test.csv".format(dataset_root,dataset_folder_prefix))
-	test.to_csv(test_output_file_csv,index=False)
+	if(validation is not None):
+		validation_output_file_csv = u.PreparePath("{0}/i-{1}.test.csv".format(dataset_root,dataset_folder_prefix))
+		validation.to_csv(validation_output_file_csv,index=False)
+		test_output_file_csv = u.PreparePath("{0}/i-{1}.realtest.csv".format(dataset_root,dataset_folder_prefix))
+		test.to_csv(test_output_file_csv,index=False)
+	else:
+		test_output_file_csv = u.PreparePath("{0}/i-{1}.test.csv".format(dataset_root,dataset_folder_prefix))
+		test.to_csv(test_output_file_csv,index=False)
 	if(arff_attr_info is not None):
 		test_output_file_arff = u.PreparePath("{0}/i-{1}.test.arff".format(dataset_root,dataset_folder_prefix))
 		CreateArffFileFromCsv(arff_attr_info,test_output_file_arff,test_output_file_csv,True,True)
@@ -150,7 +156,8 @@ def GenerateVowelRecognitionDataSetSplits(
 	imbalance_percs = None,
 	noise_percs = None,
 	class_col_name="vowel",
-	min_minority_class_samples_to_keep=500):
+	min_minority_class_samples_to_keep=500,
+	validation_perc=0):
 
 	vowelDataFile=u.PreparePath("{0}/vowel-recongnition-dataset.csv".format(rootFolder))
 	arff_attrs_file = u.PreparePath("{0}/vowel.txt".format(rootFolder))
@@ -159,7 +166,7 @@ def GenerateVowelRecognitionDataSetSplits(
 	minority_class = "v"
 	flip_fn = lambda x : "c" if(x == "v") else "c"
 	if(train_size_percs is not None):
-		GenerateDatasetSplits(rootFolder,id,data,test_perc,train_perc,0,train_size_percs,class_col_name,random_state,arff_attrs)
+		GenerateDatasetSplits(rootFolder,id,data,test_perc,train_perc,validation_perc,train_size_percs,class_col_name,random_state,arff_attrs)
 	if(imbalance_percs is not None):
 		GenerateDatasetSplitsForClassImbalance(rootFolder,"imb"+str(id),data,test_perc,train_perc,0,imbalance_percs,class_col_name,minority_class,min_minority_class_samples_to_keep,random_state,arff_attrs)
 	if(noise_percs is not None):
@@ -177,7 +184,8 @@ def GenerateCreditScreeningDataSetSplits(
 	class_col_name="A16",
 	min_minority_class_samples_to_keep=10,
 	train=None,
-	test=None):
+	test=None,
+	validation_perc = 0):
 
 	#rootFolder=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"
 	#id=0
@@ -192,7 +200,7 @@ def GenerateCreditScreeningDataSetSplits(
 	minority_class = "+"
 	flip_fn = lambda x : "-" if(x == "+") else "+"
 	if(train_size_percs is not None):
-		GenerateDatasetSplits(rootFolder,id,data,test_perc,train_perc,0,train_size_percs,class_col_name,random_state,arff_attrs)
+		GenerateDatasetSplits(rootFolder,id,data,test_perc,train_perc,validation_perc,train_size_percs,class_col_name,random_state,arff_attrs)
 	if(imbalance_percs is not None):
 		GenerateDatasetSplitsForClassImbalance(rootFolder,"imb"+str(id),data,test_perc,train_perc,0,imbalance_percs,class_col_name,minority_class,min_minority_class_samples_to_keep,random_state,arff_attrs)
 	if(noise_percs is not None):
