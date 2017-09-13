@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>60429092-0e9d-44b6-8f5e-e1e0b856ff3f</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>NeuralNetwork.py</StartupFile>
+    <StartupFile>AllExperimentsRunner.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -23,6 +23,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Adaboost.py" />
+    <Compile Include="AllExperimentsRunner.py" />
     <Compile Include="DatasetCreation.py">
       <SubType>Code</SubType>
     </Compile>
@@ -32,6 +33,7 @@
     <Compile Include="DecisionTreeRunConfig.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="DecisionTreesWithCV.py" />
     <Compile Include="ExperimentsAnalysis.py" />
     <Compile Include="ExperimentsRunner.py" />
     <Compile Include="KnnClassifier.py" />

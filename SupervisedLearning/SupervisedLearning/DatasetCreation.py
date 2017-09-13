@@ -27,8 +27,8 @@ def CreateCharacterRecognitionDatasetInstance(
 		sl.GenerateVowelRecognitionDataSetSplits(raw_datset_root,r,train_split_perc,100-train_split_perc,r,train_size_percs=train_size_percs, validation_perc=25)
 		
 def main():
-	CreateCharacterRecognitionDatasetInstance(r'C:/Users/shwet/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition')
-	CreateCreditScreeningDatasetInstance(r'C:/Users/shwet/OneDrive/Gatech/Courses/ML/DataSets/CreditScreeningDataset')
+	CreateCharacterRecognitionDatasetInstance(r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition')
+	CreateCreditScreeningDatasetInstance(r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/CreditScreeningDataset')
 
 if __name__ == '__main__':
 	main()

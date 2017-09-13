@@ -47,7 +47,9 @@ def SaveDataPlotWithLegends(YSeries_array,
                  x_axis_name="",
                  y1_axis_name="",
                  title="",
-                 legend_loc = 2):
+                 legend_loc = 2,
+                 y_limits = None,
+                 x_limits = None):
 
     # https://stackoverflow.com/questions/8409095/matplotlib-set-markers-for-individual-points-on-a-line
     fig, ax1 = plt.subplots()
@@ -70,6 +72,10 @@ def SaveDataPlotWithLegends(YSeries_array,
 
     ax1.set_xlabel(x_axis_name)
     ax1.set_ylabel(y1_axis_name)
+    if(y_limits is not None):
+        ax1.set_ylim(y_limits)
+    if(x_limits is not None):
+        ax1.set_xlim(x_limits)
     if(len(legends) > 0):
         lgd = plt.legend(handles=legends,bbox_to_anchor=(1, 1),loc=legend_loc)
 

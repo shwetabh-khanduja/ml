@@ -34,7 +34,8 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 			model_output_file=u.PreparePath("{0}/{1}.model".format(run_output_dir,id))
 			train_output_file=u.PreparePath("{0}/{1}.train.predictions.csv".format(run_output_dir,id))
 			test_output_file=u.PreparePath("{0}/{1}.test.predictions.csv".format(run_output_dir,id))
-			cv_results_file=u.PreparePath("{0}/{1}.grid_search_cv_results.csv".format(run_output_dir,id))
+            # no separate cv is done for early stopping. 
+			cv_results_file=u.PreparePath("{0}/{1}.grid_search_cv_results.csv".format(run_output_dir,id)).replace("True","False")
 			model_output_file = u.PreparePath(
                 "{0}/{1}.model".format(run_output_dir, id))
 			# if(os.path.isfile(cv_results_file)):
@@ -90,7 +91,7 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 				max_iter=max_iter)
 			cv_file = None
 			if(cv_file_format is not None):
-				cv_file = cv_file_format.format(id)
+				cv_file = cv_file_format.format(id).replace("True","False")
 			if((cv_file is None) or (os.path.isfile(cv_file) == False)):
 				gscv = GridSearchCV(classifier,param_grid,scoring='f1',n_jobs=3)
 				gscv.fit(X,Y)
@@ -192,8 +193,8 @@ def RunNeuralNetsOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gate
 	exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,["i-0"],force_computation)
 
 def main():
-	RunNeuralNetsOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
-	RunNeuralNetsOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
+	RunNeuralNetsOnCreditScreeningDataset(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
+	RunNeuralNetsOnVowelRecognitionDataset(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
 
 if __name__ == "__main__":
 	main()

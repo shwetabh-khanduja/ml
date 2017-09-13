@@ -72,55 +72,57 @@ def LoadCharacterRecognitionDataset(file,arff_attr_file = None):
 	return data,None
 
 def GenerateDatasetSplits(
-	rootFolder,
-	dataset_folder_prefix,
-	dataset,
-	test_ratio,
-	train_ratio,
-	validation_ratio,
-	train_size_percentages,
-	class_col,
-	random_state,
-	arff_attr_info=None):
-	"""
-	train_size_percentages is a list of intergers specifying the
-	percent of train set to be taken while preparing the dataset
+    rootFolder,
+    dataset_folder_prefix,
+    dataset,
+    test_ratio,
+    train_ratio,
+    validation_ratio,
+    train_size_percentages,
+    class_col,
+    random_state,
+    arff_attr_info=None):
+    """
+    train_size_percentages is a list of intergers specifying the
+    percent of train set to be taken while preparing the dataset
 
-	test_ratio,train_ratio,validation_ratio : numbers in percentages
-	"""
-	dataset_root = u.PreparePath("{0}/i-{1}_t-{2}_T-{3}".format(rootFolder,dataset_folder_prefix,train_ratio,test_ratio))
-	train,test,validation = CreateTrainTestAndValidationPartitions(dataset,class_col,train_ratio/100,test_ratio/100,random_state,validation_ratio/100)
-	if(validation is not None):
-		validation_output_file_csv = u.PreparePath("{0}/i-{1}.test.csv".format(dataset_root,dataset_folder_prefix))
-		validation.to_csv(validation_output_file_csv,index=False)
-		test_output_file_csv = u.PreparePath("{0}/i-{1}.realtest.csv".format(dataset_root,dataset_folder_prefix))
-		test.to_csv(test_output_file_csv,index=False)
-	else:
-		test_output_file_csv = u.PreparePath("{0}/i-{1}.test.csv".format(dataset_root,dataset_folder_prefix))
-		test.to_csv(test_output_file_csv,index=False)
-	if(arff_attr_info is not None):
-		test_output_file_arff = u.PreparePath("{0}/i-{1}.test.arff".format(dataset_root,dataset_folder_prefix))
-		CreateArffFileFromCsv(arff_attr_info,test_output_file_arff,test_output_file_csv,True,True)
+    test_ratio,train_ratio,validation_ratio : numbers in percentages
+    """
+    dataset_root = u.PreparePath("{0}/i-{1}_t-{2}_T-{3}".format(rootFolder,dataset_folder_prefix,train_ratio,test_ratio))
+    train,test,validation = CreateTrainTestAndValidationPartitions(dataset,class_col,train_ratio/100,test_ratio/100,random_state,validation_ratio/100)
+    if(validation is not None):
+        validation_output_file_csv = u.PreparePath("{0}/i-{1}.test.csv".format(dataset_root,dataset_folder_prefix))
+        validation.to_csv(validation_output_file_csv,index=False)
+        test_output_file_csv = u.PreparePath("{0}/i-{1}.realtest.csv".format(dataset_root,dataset_folder_prefix))
+        test.to_csv(test_output_file_csv,index=False)
+        test_output_file_arff = u.PreparePath("{0}/i-{1}.realtest.arff".format(dataset_root,dataset_folder_prefix))
+        CreateArffFileFromCsv(arff_attr_info,test_output_file_arff,test_output_file_csv,True,True)
+    else:
+        test_output_file_csv = u.PreparePath("{0}/i-{1}.test.csv".format(dataset_root,dataset_folder_prefix))
+        test.to_csv(test_output_file_csv,index=False)
+    if(arff_attr_info is not None):
+        test_output_file_arff = u.PreparePath("{0}/i-{1}.test.arff".format(dataset_root,dataset_folder_prefix))
+        CreateArffFileFromCsv(arff_attr_info,test_output_file_arff,test_output_file_csv,True,True)
 
-	# now creating the train set partitions
-	for train_set_size in train_size_percentages:
-		folder_path = u.PreparePath("{0}/i-{1}_t-{2}_ts-{3}".format(dataset_root,dataset_folder_prefix,train_ratio,train_set_size))
-		csv_output_file = u.PreparePath("{0}/i-{1}_t-{2}_ts-{3}.train.csv".format(folder_path,dataset_folder_prefix,train_ratio,train_set_size))
-		rows_to_keep = int(len(train) * train_set_size / 100)
-		train.head(rows_to_keep).to_csv(csv_output_file,index=False)
-		if(arff_attr_info is not None):
-			arff_output_file = u.PreparePath("{0}/i-{1}_t-{2}_ts-{3}.train.arff".format(folder_path,dataset_folder_prefix,train_ratio,train_set_size))
-			CreateArffFileFromCsv(arff_attr_info,arff_output_file,csv_output_file,True,True)
-		
-		# writing the parameters
-		params_info = ["dataset_instance={0}".format(dataset_folder_prefix),
-						"test_split={0}".format(test_ratio),
-						"train_split={0}".format(train_ratio),
-						"random_state={0}".format(random_state),
-						"class_col={0}".format(class_col),
-						"train_split_percent_used={0}".format(train_set_size)]
-		params_out_file = u.PreparePath("{0}/i-{1}_t-{2}_ts-{3}.params.txt".format(folder_path,dataset_folder_prefix,train_ratio,train_set_size))
-		u.WriteTextArrayToFile(params_out_file,params_info)
+    # now creating the train set partitions
+    for train_set_size in train_size_percentages:
+        folder_path = u.PreparePath("{0}/i-{1}_t-{2}_ts-{3}".format(dataset_root,dataset_folder_prefix,train_ratio,train_set_size))
+        csv_output_file = u.PreparePath("{0}/i-{1}_t-{2}_ts-{3}.train.csv".format(folder_path,dataset_folder_prefix,train_ratio,train_set_size))
+        rows_to_keep = int(len(train) * train_set_size / 100)
+        train.head(rows_to_keep).to_csv(csv_output_file,index=False)
+        if(arff_attr_info is not None):
+            arff_output_file = u.PreparePath("{0}/i-{1}_t-{2}_ts-{3}.train.arff".format(folder_path,dataset_folder_prefix,train_ratio,train_set_size))
+            CreateArffFileFromCsv(arff_attr_info,arff_output_file,csv_output_file,True,True)
+
+        # writing the parameters
+        params_info = ["dataset_instance={0}".format(dataset_folder_prefix),
+                        "test_split={0}".format(test_ratio),
+                        "train_split={0}".format(train_ratio),
+                        "random_state={0}".format(random_state),
+                        "class_col={0}".format(class_col),
+                        "train_split_percent_used={0}".format(train_set_size)]
+        params_out_file = u.PreparePath("{0}/i-{1}_t-{2}_ts-{3}.params.txt".format(folder_path,dataset_folder_prefix,train_ratio,train_set_size))
+        u.WriteTextArrayToFile(params_out_file,params_info)
 
 def CreateArffFileFromCsv(arff_attr_info, arff_file_path, data_text_array, isFile=False,hasHeader=True):
 	arff_data = []

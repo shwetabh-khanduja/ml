@@ -5,9 +5,9 @@ import Adaboost as ada
 import DecisionTreesWithCV as dt
 import ExperimentsAnalysis as ea
 
-def GenerateResultsForDecisionTrees(root):
-    dt.RunDecisionTreesOnCreditScreeningDataset(root+r'/CreditScreeningDataset')
-    dt.RunDecisionTreesOnVowelRecognitionDataset(root+r'/LetterRecognition')
+def GenerateResultsForDecisionTrees(root, weka_jar_path):
+    dt.RunDecisionTreesOnCreditScreeningDataset(root+r'/CreditScreeningDataset', weka_jar_path)
+    dt.RunDecisionTreesOnVowelRecognitionDataset(root+r'/LetterRecognition', weka_jar_path)
 
     ea.DecisionTreeAnalysis(
         root + r'/CreditScreeningDataset/Plots/dt', 
@@ -42,9 +42,9 @@ def GenerateResultsForDecisionTrees(root):
             'F-Measure',
             lambda x : (x['prune']==prune) and (x['istrain'] == 0))
 
-def GenerateResultsForAdaboost(root):
-    ada.RunAdaBoostOnCreditScreeningDataset(root+r'/CreditScreeningDataset')
-    ada.RunAdaBoostOnVowelRecognitionDataset(root+r'/LetterRecognition')
+def GenerateResultsForAdaboost(root, weka_jar_path):
+    ada.RunAdaBoostOnCreditScreeningDataset(root+r'/CreditScreeningDataset', weka_jar_path)
+    ada.RunAdaBoostOnVowelRecognitionDataset(root+r'/LetterRecognition',weka_jar_path)
 
     ea.DecisionTreeAnalysis(
         root + r'/CreditScreeningDataset/Plots/ada', 
@@ -68,7 +68,7 @@ def GenerateResultsForAdaboost(root):
             "Adaboost Model Complexity Curve (Pruning : {0})".format(prune),
             "Num of weak learners",
             'F-Measure',
-            lambda x : (x['prune']==prune) and (x['istrain'] == 0))
+            lambda x : (x['prune']==prune) and (x['istrain'] == 1))
         ea.PlotCrossValidationCurvesForWeka(
             root + '/LetterRecognition/eval_agg.vowel.ada_3_cv.csv',
             'iter',
@@ -77,23 +77,26 @@ def GenerateResultsForAdaboost(root):
             "Adaboost Model Complexity Curve (Pruning : {0})".format(prune),
             "Num of weak learners",
             'F-Measure',
-            lambda x : (x['prune']==prune) and (x['istrain'] == 0))
+            lambda x : (x['prune']==prune) and (x['istrain'] == 1))
 
 def GenerateResultsForSvm(root):
-    Svm.RunSvmClassifierOnCreditScreeningDataset(root + r"/CreditScreeningDataset")
-    Svm.RunSvmClassifierOnVowelRecognitionDataset(root + r"/LetterRecognition")
-    ea.PlotCrossValidationCurvesForSvm(root)
-    ea.SvmAnalysis(
-        root + r'/LetterRecognition/Plots/svm', 
-        r'dt.vowelrecognition.svm',
-        root + r"/LetterRecognition/eval_agg.vowel.svm_3_0.csv",
-        None)
+    #Svm.RunSvmClassifierOnCreditScreeningDataset(root + r"/CreditScreeningDataset")
+    #Svm.RunSvmClassifierOnVowelRecognitionDataset(root + r"/LetterRecognition")
+    #ea.PlotCrossValidationCurvesForSvm(root)
+    #ea.SvmAnalysis(
+    #    root + r'/LetterRecognition/Plots/svm', 
+    #    r'dt.vowelrecognition.svm',
+    #    root + r"/LetterRecognition/eval_agg.vowel.svm_3_0.csv",
+    #    None)
 
-    ea.SvmAnalysis(
-        root + r'/CreditScreeningDataset/Plots/svm', 
-        r'dt.creditscreening.svm',
-        root + r"/CreditScreeningDataset/eval_agg.credit.svm_3_0.csv",
-        None)
+    #ea.SvmAnalysis(
+    #    root + r'/CreditScreeningDataset/Plots/svm', 
+    #    r'dt.creditscreening.svm',
+    #    root + r"/CreditScreeningDataset/eval_agg.credit.svm_3_0.csv",
+    #    None)
+    ea.PlotSupportVectorsOverlap(root + "/LetterRecognition",r"Plots/svm/vowel.support_overlap.png","i-0_t-80_T-20/vowel.support_overlap.csv")
+    ea.PlotSupportVectorsOverlap(root + "/CreditScreeningDataset",r"Plots/svm/credit.support_overlap.png","i-0_t-80_T-20/credit.support_overlap.csv")
+
 
 def GenerateResultsForNNets(root):
     nn.RunNeuralNetsOnCreditScreeningDataset(root + r"/CreditScreeningDataset")
@@ -122,12 +125,13 @@ def GenerateResultsForKnn(root):
 
 
 def main():
-    root = r'C:/Users/shwet/OneDrive/Gatech/Courses/ML/DataSets'
-    GenerateResultsForDecisionTrees(root)
-    # GenerateResultsForAdaboost(root)
-    # GenerateResultsForKnn(root)
-    # GenerateResultsForNNets(root)
-    # GenerateResultsForSvm(root)
+    root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets'
+    weka_jar_path = "C:/Program Files/Weka-3-8/weka.jar"
+    GenerateResultsForSvm(root)
+    #GenerateResultsForDecisionTrees(root, weka_jar_path)
+    #GenerateResultsForAdaboost(root, weka_jar_path)
+    #GenerateResultsForKnn(root)
+    #GenerateResultsForNNets(root)
 
 if __name__ == '__main__':
     main()

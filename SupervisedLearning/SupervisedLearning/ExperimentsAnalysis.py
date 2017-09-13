@@ -250,7 +250,7 @@ def KnnAnalysisOptK(
                 y_train = u.YSeries(FilterRows(data_agg, train_filter)[k + "_" + agg], line_color='r',
                                           points_marker='o', plot_legend_label="Train")
                 y_test = u.YSeries(FilterRows(data_agg, test_filter)[k + "_" + agg], line_color='b',
-                                         points_marker='o', plot_legend_label="Test")
+                                         points_marker='o', plot_legend_label='validation')
                 if((k=='modelevaltimesecs')):
                     y_series = [y_train]
                 else:
@@ -305,7 +305,7 @@ def SvmAnalysis(
                 y_train = u.YSeries(FilterRows(data_agg, train_filter)[k + "_" + agg], line_color='r',
                                           points_marker='o', plot_legend_label="Train")
                 y_test = u.YSeries(FilterRows(data_agg, test_filter)[k + "_" + agg], line_color='b',
-                                         points_marker='o', plot_legend_label="Test")
+                                         points_marker='o', plot_legend_label='validation')
                 if((k=='numsupportvectors') | (k=='modelbuildtimesecs')):
                     y_series = [y_train]
                 else:
@@ -316,6 +316,25 @@ def SvmAnalysis(
                 f, ax = u.SaveDataPlotWithLegends(y_series, x, output_file_name,
                                                   True, mapping_output_words[dataset_type], mapping_output_words[k], 'SVM Performance'.format(agg))
     return data_agg
+
+def PlotSupportVectorsOverlap(root, output_file, data_file = None):
+    file_template = root + '/i-0_t-80_T-20/i-0_t-80_ts-{0}/svm/cvresults/cvresults.model';
+
+    y = []
+    x = []
+    for i in np.arange(30,110,10):
+        file1 = file_template.format(str(i-10))
+        file2 = file_template.format(str(i))
+        s1 = u.ReadBinaryFile(file1).support_
+        s2 = u.ReadBinaryFile(file2).support_
+        _y = len(set(s1).intersection(s2)) / len(s1)
+        _x = i
+        y.append(_y)
+        x.append(_x)
+    outputfile = root + "/" + output_file
+    u.SaveDataPlotWithLegends([u.YSeries(y)],x,outputfile,x_axis_name="Train size % used",y1_axis_name="Common support vectors fraction wrt previous size %",y_limits=[0,1])
+    if(data_file is not None):
+        pd.DataFrame({'size %':x, 'overlap':y}).to_csv(root + '/' + data_file,index = False)
 
 def PlotCrossValidationCurvesForNNets(rootfolder):
     
@@ -753,7 +772,9 @@ def NNetAnalysis(
     return data_agg
 
 def main():
-    root = r"C:/Users/shwet/OneDrive/Gatech/Courses/ML/DataSets"
+    root = r"C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets"
+    PlotSupportVectorsOverlap(root + "/LetterRecognition",r"Plots/svm/vowel.support_overlap.png","i-0_t-80_T-20/vowel.support_overlap.csv")
+    PlotSupportVectorsOverlap(root + "/CreditScreeningDataset",r"Plots/svm/credit.support_overlap.png","i-0_t-80_T-20/credit.support_overlap.csv")
     #GetBestResultsForVowelRecognitionDataset(root+'/LetterRecognition')
     PlotCrossValidationCurvesForKnn(root)
     PlotCrossValidationCurvesForSvm(root)
