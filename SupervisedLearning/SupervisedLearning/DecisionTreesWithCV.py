@@ -51,7 +51,7 @@ def RunDecisionTrees(datasets_root_folder,weka_jar_path,use_arff_files=True):
         trainfile = glob.glob("{0}/*.train.{1}".format(dataset_dir,file_extn))[0]
         paramfile = glob.glob("{0}/*.params.txt".format(dataset_dir))[0]
         dt_root = u.PreparePath(dataset_dir+"/dt",is_file=False)
-        config_gen = ParameterGrid({'prune':[True,False],'inst':[2,5,10,20,25,30,50]})
+        config_gen = ParameterGrid({'prune':[False],'inst':[2,5,8,12,15]})
         for config in config_gen:
             id = GetIdForConfig(config)
             params_info = u.ReadLinesFromFile(paramfile)
@@ -77,10 +77,10 @@ def RunDecisionTrees(datasets_root_folder,weka_jar_path,use_arff_files=True):
             config["modelbuildtimesecs"] = timeit.timeit(lambda: sl.RunCmdWithoutConsoleWindow(cmd),number=1)
             
             # now for test set
-            config["predictionoutputfile"] = test_output_file
-            config["testset"] = testfiles[0]
-            cmd = GetWekaCommandLineForConfig(config,True)
-            config["modelevaltimesecs"] = timeit.timeit(lambda : sl.RunCmdWithoutConsoleWindow(cmd),number=1)
+            #config["predictionoutputfile"] = test_output_file
+            #config["testset"] = testfiles[0]
+            #cmd = GetWekaCommandLineForConfig(config,True)
+            #config["modelevaltimesecs"] = timeit.timeit(lambda : sl.RunCmdWithoutConsoleWindow(cmd),number=1)
 
             config.pop('random_state',None) # since we already have that in params_info
             for k in config:
@@ -109,7 +109,7 @@ def RunDecisionTreesWithOptimalInst(datasets_root_folder,weka_jar_path, cv_resul
         config_gen = ParameterGrid({'prune':[True,False]})
         for config in config_gen:
 
-            filter = lambda x : (x['prune'] == config['prune']) & (x[filter_name] == filter_val) & (x['istrain'] == 0)
+            filter = lambda x : (x['prune'] == False) & (x[filter_name] == filter_val) & (x['istrain'] == 1) # this will output on the held out set
             filtered_rows = u.FilterRows(cv_results,filter)
             a = filtered_rows['f']
             if(len(a) == 0):
@@ -195,7 +195,7 @@ def RunDecisionTreesOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\G
     exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,opt_id,metric_fn,algo_folder,keys_to_keep,pos_class,["i-0"],force_computation,opt_eval_fn)
 
 def main():
-    RunDecisionTreesOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
+    RunDecisionTreesOnCreditScreeningDataset(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
     RunDecisionTreesOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
 
 if __name__ == '__main__':

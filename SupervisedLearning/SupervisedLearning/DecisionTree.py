@@ -341,7 +341,7 @@ def DecisionTreesExperiments():
 
 
 if __name__ == "__main__":
-    # RunDecisionTreesOnCreditScreeningDataset(
-    #     r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
-    RunDecisionTreesOnVowelRecognitionDataset(
-        r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
+     RunDecisionTreesOnCreditScreeningDataset(
+         r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
+    #RunDecisionTreesOnVowelRecognitionDataset(
+    #    r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")

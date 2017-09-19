@@ -6,6 +6,7 @@ import ast
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import GridSearchCV, ParameterGrid
+from sklearn.model_selection import LeaveOneOut
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 
@@ -80,6 +81,8 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
                 "{0}/{1}.grid_search_cv_results.csv".format(run_output_dir,id))
             model_output_file = u.PreparePath(
                 "{0}/{1}.model".format(run_output_dir, id))
+            scalar_output_file = u.PreparePath(
+                "{0}/{1}.scaler".format(run_output_dir, id))
             if(cv_file is not None):
                 cv_file = cv_file
             if(_D is not None):
@@ -112,7 +115,25 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
             if(metric_fn is None):
                 classifier = KNeighborsClassifier(neighbors,weights)
             else:
-                classifier = KNeighborsClassifier(neighbors,weights,algorithm='auto',metric='pyfunc',metric_params={'func': metric_fn})
+                classifier = KNeighborsClassifier(neighbors,weights,algorithm='brute',metric='pyfunc',metric_params={'func': metric_fn})
+            
+            loo = LeaveOneOut()
+            y_actual = []
+            y_predicted = []
+            count = 0
+            total = len(X)
+            for train_idx, test_idx in loo.split(X):
+                X_train, X_test = X[train_idx], X[test_idx]
+                Y_train, Y_test = Y[train_idx], Y[test_idx]
+                classifier.fit(X_train,Y_train)
+                Y_test_predicted = classifier.predict(X_test)
+                assert(len(Y_test_predicted) == 1)
+                y_actual.append(Y_test[0])
+                y_predicted.append(Y_test_predicted[0])
+                count = count + 1
+                if(count % 100 == 0):
+                    print(str(count)+" "+str(total))
+
             start = time.clock()
             classifier.fit(X,Y)
             end = time.clock()
@@ -120,8 +141,8 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
             config["modelbuildtimesecs"] = end-start
             # for train performance
             config["trainpredictionoutputfile"]=train_output_file
-            train_predicted_Y = classifier.predict(X)
-            output = pd.DataFrame({"actual":Y,"predicted":train_predicted_Y})
+            #train_predicted_Y = classifier.predict(X)
+            output = pd.DataFrame({"actual":y_actual,"predicted":y_predicted})
             output.to_csv(train_output_file,index=False)
 
             # now for test set
@@ -131,6 +152,7 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
             predicted_Y = classifier.predict(test_X)
             end = time.clock()
             u.WriteBinaryFile(model_output_file,classifier)
+            u.WriteBinaryFile(scalar_output_file,scaler)
             config["modelevaltimesecs"] = end-start
             output = pd.DataFrame({"actual":test_Y,"predicted":predicted_Y})
             output.to_csv(test_output_file,index=False)
@@ -138,7 +160,7 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
             for k in config:
                 params_info.append("{0}={1}".format(k,config[k]))
             u.WriteTextArrayToFile(params_output_file,params_info)
-        print("done dataset : " + dataset_dir)
+        print("DONE dataset : " + dataset_dir)
 
 def MapNominalValuesToIntegers(dataframe, columns_with_nominal_values):
     newdataframe = dataframe
@@ -187,8 +209,8 @@ def RunKnnClassifierOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\G
     exp.RunNEvaluateExperimentsOnDataSet(classifier_fn,root,id,metric_fn,algo_folder,keys_to_keep,pos_class,["i-0"],force_computation)
 
 def main():
-    RunKnnClassifierOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
-    RunKnnClassifierOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
+    RunKnnClassifierOnCreditScreeningDataset(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
+    RunKnnClassifierOnVowelRecognitionDataset(r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
 
 if __name__ == '__main__':
     main()

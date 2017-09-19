@@ -55,7 +55,9 @@ def SaveDataPlotWithLegends(YSeries_array,
     fig, ax1 = plt.subplots()
     legends = []
     for y in YSeries_array:
-        if(type(x[0]) == str):
+        if(y.xvalues is not None):
+            x_values = y.xvalues
+        elif(type(x[0]) == str):
             x_values = np.arange(len(x))
             plt.xticks(x_values,x)
         else:
@@ -67,7 +69,7 @@ def SaveDataPlotWithLegends(YSeries_array,
                 mlines.Line2D([], [],
                                 color=y.line_color,
                                 linestyle='',
-                                marker=y.points_marker,
+                                marker=y.legend_marker,
                                 label=y.plot_legend_label))
 
     ax1.set_xlabel(x_axis_name)
@@ -246,6 +248,13 @@ def GetMarkerColorCombinations(seed = 0):
     random.shuffle(combinations)
     return combinations
 
+def GetColorCombinations(seed = 0):
+    grid = ParameterGrid([{'color':['orange','red','blue','green','black','saddlebrown','violet','darkcyan','maroon','lightcoral']}])
+    combinations = [p for p in grid]
+    random.seed(seed)
+    random.shuffle(combinations)
+    return combinations
+
 def WriteBinaryFile(filename, binobj):
     with open(filename, 'wb') as handle:
         pickle.dump(binobj, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -255,10 +264,15 @@ def ReadBinaryFile(filename):
         return pickle.load(handle)
 
 class YSeries():
-    def __init__(self, values, line_style='-', points_marker='o', line_color='r', plot_legend_label=None):
+    def __init__(self, values, line_style='-', points_marker='o', line_color='r', plot_legend_label=None, xvalues=None, legend_marker=None):
         self.values = values
         self.line_style = line_style
         self.points_marker = points_marker
         self.line_color = line_color
         self.plot_legend_label = plot_legend_label
         self.plot_legend = True if plot_legend_label is not None else False
+        self.xvalues = xvalues
+        if(legend_marker is None):
+            self.legend_marker = self.points_marker
+        else:
+            self.legend_marker = legend_marker

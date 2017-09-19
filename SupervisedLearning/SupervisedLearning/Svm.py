@@ -20,6 +20,7 @@ def GetIdForConfig(config):
 def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_class_label=None, cv_file = None):
     file_extn = "csv"
     testfiles = glob.glob("{0}/*.test.{1}".format(datasets_root_folder, file_extn))
+    realtestfiles = glob.glob("{0}/*.realtest.{1}".format(datasets_root_folder, file_extn))
     first = True
     for dataset_dir in u.Get_Subdirectories(datasets_root_folder):
         if(first):
@@ -33,7 +34,9 @@ def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_
 
         data = pd.read_csv(trainfile)
         testdata = pd.read_csv(testfiles[0])
+        realtestdata = pd.read_csv(realtestfiles[0])
         train_len = len(data)
+        test_len = len(testdata) + train_len
 
         cols_to_ignore = set(
             nominal_value_columns) if nominal_value_columns is not None else set([])
@@ -43,14 +46,21 @@ def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_
         scaler.fit(data[cols_to_transform])
         data[cols_to_transform] = scaler.transform(data[cols_to_transform])
         testdata[cols_to_transform] = scaler.transform(testdata[cols_to_transform])
+        realtestdata[cols_to_transform] = scaler.transform(realtestdata[cols_to_transform])
 
-        all_data = pd.concat([data, testdata], axis=0, ignore_index=True)
+        all_data = pd.concat([data, testdata, realtestdata], axis=0, ignore_index=True)
         X_all, Y_all = nnet.PrepareDataAndLabel(
             all_data, positive_class_label, nominal_value_columns)
         X = X_all[0:train_len, :]
         Y = Y_all[0:train_len]
-        test_X = X_all[train_len:, :]
-        test_Y = Y_all[train_len:]
+        test_X = X_all[train_len:test_len, :]
+        test_Y = Y_all[train_len:test_len]
+        realtest_X = X_all[test_len:,:]
+        realtest_Y = Y_all[test_len:]
+        realtest_data_file = trainfile.replace(".train.",".realtest.preprocessed.data.")
+        realtest_label_file = trainfile.replace(".train.",".realtest.preprocessed.label.")
+        np.savetxt(realtest_data_file,realtest_X,delimiter=',')
+        np.savetxt(realtest_label_file,realtest_Y,delimiter=',')
 
         param_grid = [
                         {'C': [0.1, 1, 10, 100, 1000], 'degree' : [2,3,4],'kernel': ['poly']},

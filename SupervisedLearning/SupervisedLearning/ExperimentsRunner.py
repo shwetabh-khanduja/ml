@@ -116,12 +116,13 @@ def EvaluateExperiments(
             train_performance_values = ",".join(values)
             train_performance_values = "{0},1,{1},{2},{3}".format(
                 ",".join(values), str(p), str(r), str(f))
-            p, r, f = metric_calculation_fn(
-                params["testpredictionoutputfile"], positive_class)
-            test_performance_values = ",".join(values)
-            test_performance_values = "{0},0,{1},{2},{3}".format(
-                ",".join(values), str(p), str(r), str(f))
             evals.append(train_performance_values)
-            evals.append(test_performance_values)
+            if(os.path.isfile(params["testpredictionoutputfile"])):
+                p, r, f = metric_calculation_fn(
+                    params["testpredictionoutputfile"], positive_class)
+                test_performance_values = ",".join(values)
+                test_performance_values = "{0},0,{1},{2},{3}".format(
+                    ",".join(values), str(p), str(r), str(f))
+                evals.append(test_performance_values)
     u.WriteTextArrayToFile(u.PreparePath(
         "{0}/{1}".format(datasets_root_folder, evaluation_output_filename)), evals)

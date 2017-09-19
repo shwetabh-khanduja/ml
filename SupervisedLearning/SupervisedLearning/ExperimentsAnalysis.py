@@ -7,6 +7,10 @@ from sklearn.model_selection import ParameterGrid
 import SupervisedLearning as sl
 import random
 import ast
+import Adaboost as ada
+import DecisionTreesWithCV as dt
+import glob
+import time
 
 def TestPlotting():
     y1 = u.YSeries(np.arange(10) * 2, line_style='-',
@@ -17,7 +21,6 @@ def TestPlotting():
     fig, ax = u.SaveDataPlotWithLegends([y1, y2], x, r"c:/temp/testfig.png", dispose_fig=False,
                                         x_axis_name="x values", y1_axis_name="y values", title="x square")
     plt.show(fig)
-
 
 def GetAggMetrics(data, gpby=['train_split_percent_used', 'prune', 'istrain'], dataset_type_col_idx=0,
                   col_funcs={'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
@@ -197,14 +200,23 @@ def DecisionTreeAnalysis(
                 y_train_no_prune = u.YSeries(FilterRows(data_agg, train_no_prune_filter)[k + "_" + agg], line_color='r',
                                              points_marker='x', plot_legend_label="Train_without_pruning")
                 y_test_prune = u.YSeries(FilterRows(data_agg, test_prune_filter)[k + "_" + agg], line_color='b',
-                                         points_marker='o', plot_legend_label="Test_with_pruning")
+                                         points_marker='o', plot_legend_label="Validation_with_pruning")
                 y_no_test_prune = u.YSeries(FilterRows(data_agg, test_no_prune_filter)[k + "_" + agg], line_color='b',
-                                            points_marker='x', plot_legend_label="Test_without_pruning")
+                                            points_marker='x', plot_legend_label="Validation_without_pruning")
 
-                if((k=='modelbuildtimesecs')):
-                    y_series = [y_train_no_prune, y_train_prune]
+                
+                if(len(y_train_prune.values) == 0):
+                    y_no_test_prune.plot_legend_label = "Validation"
+                    y_train_no_prune.plot_legend_label = "Train"
+                    if((k=='modelbuildtimesecs')):
+                        y_series = [y_train_no_prune]
+                    else:
+                        y_series = [y_no_test_prune, y_train_no_prune]
                 else:
-                    y_series = [y_test_prune, y_no_test_prune, y_train_no_prune, y_train_prune]
+                    if((k=='modelbuildtimesecs')):
+                        y_series = [y_train_no_prune, y_train_prune]
+                    else:
+                        y_series = [y_test_prune, y_no_test_prune, y_train_no_prune, y_train_prune]
 
                 output_file_name = u.PreparePath(
                     "{3}/{0}.{4}.{1}.{2}.png".format(output_file_prefix, k, agg, output_root, dataset_type))
@@ -384,6 +396,7 @@ def PlotCrossValidationCurvesForSvm(rootfolder):
         def cv_getter(path):
             return "{0}/svm/cvresults/cvresults.grid_search_cv_results.csv".format(path)
         PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,cv_save_file)
+
 def PlotCrossValidationCurvesForWeka(
     cv_file,
     model_complexity_param_name,
@@ -761,9 +774,9 @@ def NNetAnalysis(
                 y_train_no_earlystopping = u.YSeries(mvh(FilterRows(data_agg, train_no_earlystopping_filter)), line_color='r',
                                              points_marker='x', plot_legend_label="Train_without_earlystopping")
                 y_test_earlystopping = u.YSeries(mvh(FilterRows(data_agg, test_earlystopping_filter)), line_color='b',
-                                         points_marker='o', plot_legend_label="Test_with_earlystopping")
+                                         points_marker='o', plot_legend_label="Validation_with_earlystopping")
                 y_no_test_earlystopping = u.YSeries(mvh(FilterRows(data_agg, test_no_earlystopping_filter)), line_color='b',
-                                            points_marker='x', plot_legend_label="Test_without_earlystopping")
+                                            points_marker='x', plot_legend_label="Validation_without_earlystopping")
 
                 output_file_name = u.PreparePath(
                     "{3}/{0}.{4}.{1}.{2}.png".format(output_file_prefix, k, agg, output_root, dataset_type))
@@ -771,8 +784,100 @@ def NNetAnalysis(
                                                   True, mapping_output_words[dataset_type], mapping_output_words[k], 'Neural Nets Performance'.format(agg))
     return data_agg
 
+def PlotAdaboostPerIterationCurves(file_template, filter, plot_output_file, iters):
+    ts = [20,30,40,50,60,70,80,90,100]
+    colors = u.GetColorCombinations()
+    y = []
+    for _ts in ts:
+        data = pd.read_csv(file_template.format(str(_ts)))
+        data = u.FilterRows(data,filter)
+        data = data.set_index('iter')
+        train_data = FilterRows(data,lambda x : x['istrain'] == 1)
+        test_data = FilterRows(data,lambda x : x['istrain'] == 0)
+        train_y = []
+        test_y = []
+        for iter in iters:
+            train_y.append(train_data.loc[iter]['f'])
+            test_y.append(test_data.loc[iter]['f'])
+        c = colors.pop()
+        y.append(u.YSeries(train_y,points_marker='o',line_color=c['color'],plot_legend_label=str(_ts)+"-train"))
+        y.append(u.YSeries(test_y,points_marker='x',line_color=c['color'],plot_legend_label=str(_ts)+"-validation"))
+    u.SaveDataPlotWithLegends(y,iters,plot_output_file,x_axis_name = "num of iters/weak learners",y1_axis_name='f-measure')
+
+def PlotLossCurvesForNeuralNets(metrics_file, output_file_template):
+    metrics = pd.read_csv(metrics_file)
+    es = [False,True]
+    y = []
+    for _es in es:
+        colors = u.GetColorCombinations(4)
+        filter = lambda x : x['earlystopping'] == _es
+        data = FilterRows(metrics, filter)
+        train_data = FilterRows(data,lambda x : x['istrain'] == 1).set_index('train_split_percent_used')
+        for label in train_data.index:
+            yvalues = [float(x) for x in train_data.loc[label]['loss_curve'].split(';')]
+            xvalues = np.arange(len(yvalues)) + 1
+            y.append(u.YSeries(yvalues,points_marker='.',legend_marker='o',line_color=colors.pop()['color'],plot_legend_label=str(label),xvalues=xvalues))
+        filename = output_file_template.format(str(_es))
+        u.SaveDataPlotWithLegends(y,None,filename,x_axis_name="epochs",y1_axis_name="train loss",x_limits=[1,200])
+        y.clear()
+
+def ComputePerformanceOnRealTestSet(model_info,root,outputfile,weka_jar,pos_class):
+
+    models = ['ada','dt','svm','nnets','knn']
+    f = []
+    for model in models:
+        if((model == 'ada') | (model == 'dt')):
+            testfile = glob.glob("{0}/*.realtest.arff".format(root))[0]
+            modelfile = "{0}/{1}".format(root,model_info[model])
+            wekajar = weka_jar
+            if(model == 'ada'):
+                _outputfile = "{0}/realtest.prediction.ada.csv".format(root)
+                _f = ComputeWekaSavedModelPerformance(testfile,modelfile,weka_jar,_outputfile,ada.GetWekaCommandLineForConfig,pos_class)
+            else:
+                _outputfile = "{0}/realtest.prediction.dt.csv".format(root)
+                _f = ComputeWekaSavedModelPerformance(testfile,modelfile,weka_jar,_outputfile,dt.GetWekaCommandLineForConfig,pos_class)
+        else:
+            datafolder = "{0}/i-0_t-80_ts-{1}".format(root,model_info[model][1])
+            testfile = glob.glob("{0}/*.realtest.preprocessed.data*".format(datafolder))[0]
+            labelfile = glob.glob("{0}/*.realtest.preprocessed.label*".format(datafolder))[0]
+            _f = ComputeSklearnSavedModelPerformance(testfile,labelfile,root+'/'+ model_info[model][0],pos_class)
+        f.append(_f)
+    lines = [u.ConcatToStr(",",models),u.ConcatToStr(",",f)]
+    u.WriteTextArrayToFile(root + '/'+ outputfile,lines)
+
+def ComputeSklearnSavedModelPerformance(datafile,labelfile,modelpath,pos_class):
+    model = u.ReadBinaryFile(modelpath)
+    data = pd.read_csv(datafile,header = None)
+    labels = pd.read_csv(labelfile,header=None)[0]
+    start = time.clock()
+    score = model.predict(data)
+    end = time.clock()
+    p,r,f = sl.ComputePrecisionRecallForPythonOutputFormat(pd.DataFrame({'predicted':score,'actual':labels}),pos_class,False)
+    print("{0} -> {1}".format(modelpath,str(end - start)))
+    return f;
+
+def ComputeWekaSavedModelPerformance(datafile,modelpath,wekajar,outputfile,cmdline_generation_fn,pos_class):
+    config = {}
+    config['wekajar'] = wekajar
+    config['testset'] = datafile
+    config['modeloutputfile'] = modelpath
+    config['testpredictionoutputfile'] = outputfile
+    cmdline = cmdline_generation_fn(config,is_test=True)
+    start = time.clock()
+    sl.RunCmdWithoutConsoleWindow(cmdline)
+    end = time.clock()
+    print("{0} -> {1}".format(modelpath,str(end - start)))
+    p,r,f = sl.GetPrecisionRecallForWekaOutputFile(outputfile,pos_class)
+    return f
+
 def main():
     root = r"C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets"
+
+    #PlotLossCurvesForNeuralNets(root + r'/CreditScreeningDataset/eval_agg.credit.nnet_3_0.csv', root + '/CreditScreeningDataset/Plots/nnets/credit.losscurve.earlystop-{0}.png')
+    PlotLossCurvesForNeuralNets(root + r'/LetterRecognition/eval_agg.vowel.nnet_3_0.csv', root + '/LetterRecognition/Plots/nnets/vowel.losscurve.earlystop-{0}.png')
+    #PlotAdaboostPerIterationCurves(root + '/CreditScreeningDataset/eval_agg.credit.ada_3_ts-{0}.csv',lambda x : x['prune'] == True,root + '/CreditScreeningDataset/Plots/ada/credit.prune.itercurves.png',[2,5,10,15,20]);
+    PlotAdaboostPerIterationCurves(root + '/LetterRecognition/eval_agg.vowel.ada_3_ts-{0}.csv',lambda x : x['prune'] == True,root + '/LetterRecognition/Plots/ada/vowel.prune.itercurves.png',[2,10,20,30,50]);
+    
     PlotSupportVectorsOverlap(root + "/LetterRecognition",r"Plots/svm/vowel.support_overlap.png","i-0_t-80_T-20/vowel.support_overlap.csv")
     PlotSupportVectorsOverlap(root + "/CreditScreeningDataset",r"Plots/svm/credit.support_overlap.png","i-0_t-80_T-20/credit.support_overlap.csv")
     #GetBestResultsForVowelRecognitionDataset(root+'/LetterRecognition')

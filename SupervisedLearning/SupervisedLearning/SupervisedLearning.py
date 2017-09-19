@@ -10,6 +10,7 @@ import os
 import subprocess as sb
 import random
 from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import accuracy_score
 
 def LoadWineDataSet(root = r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\WineDataset"):
 	datafile = root+r"\wine.csv"
@@ -442,16 +443,18 @@ def EvaluateDecisionTrees(datasets_root_folder,params_to_keep,positive_class,eva
 	u.WriteTextArrayToFile(u.PreparePath("{0}/{1}".format(datasets_root_folder,evaluation_output_filename)),evals)
 
 def GetPrecisionRecallForWekaOutputFile(file,positive_class_label):
-	results = pd.read_csv(file)
-	actual = results['actual'].map(lambda x : 1 if(x.split(':')[1] == positive_class_label) else 0)
-	predicted = results['predicted'].map(lambda x : 1 if(x.split(':')[1] == positive_class_label) else 0)
-	p,r,f,s = precision_recall_fscore_support(actual,predicted,average='binary')
-	return [p,r,f]
+    results = pd.read_csv(file)
+    actual = results['actual'].map(lambda x : 1 if(x.split(':')[1] == positive_class_label) else 0)
+    predicted = results['predicted'].map(lambda x : 1 if(x.split(':')[1] == positive_class_label) else 0)
+    p,r,f,s = precision_recall_fscore_support(actual,predicted,average='binary')
+    f = accuracy_score(actual,predicted)
+    return [p,r,f]
 
-def ComputePrecisionRecallForPythonOutputFormat(file,positive_class_label):
-	results = pd.read_csv(file)
-	p,r,f,s = precision_recall_fscore_support(results['actual'],results['predicted'],average='binary')
-	return [p,r,f]
+def ComputePrecisionRecallForPythonOutputFormat(file,positive_class_label,is_file=True):
+    results = pd.read_csv(file) if is_file else file
+    p,r,f,s = precision_recall_fscore_support(results['actual'],results['predicted'],average='binary')
+    f = accuracy_score(results['actual'],results['predicted'])
+    return [p,r,f]
 
 def GetDictionary(lines_array):
 	d = {}
