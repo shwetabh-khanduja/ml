@@ -15,7 +15,7 @@ import utils as u
 from NeuralNetworkRunConfig import NeuralNetworkRunConfig as nnconfig
 
 
-def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, positive_class_label=None,cv_file_format = None):
+def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, positive_class_label=None,cv_file_format = None,cv_scoring='f1'):
 	file_extn = "csv"
 	testfiles = glob.glob("{0}/*.test.{1}".format(datasets_root_folder,file_extn))
 
@@ -93,7 +93,7 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 			if(cv_file_format is not None):
 				cv_file = cv_file_format.format(id).replace("True","False")
 			if((cv_file is None) or (os.path.isfile(cv_file) == False)):
-				gscv = GridSearchCV(classifier,param_grid,scoring='f1',n_jobs=3)
+				gscv = GridSearchCV(classifier,param_grid,scoring=cv_scoring,n_jobs=3)
 				gscv.fit(X,Y)
 				_D = pd.DataFrame(gscv.cv_results_)
 				best_params = gscv.best_params_
@@ -183,10 +183,10 @@ def RunNeuralNetsOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\Gat
 
 def RunNeuralNetsOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"):
 	pos_class="+"
-	metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
+	metric_fn = sl.ComputePrecisionRecallAccuracyForPythonOutputFormat
 	keys_to_keep=['dataset_instance','test_split','train_split','random_state','train_split_percent_used','prune','modelbuildtimesecs','earlystopping','alphas','init_learning_rates','total_iter','time_per_iter','best_alpha','best_init_learning_rate','loss_curve','momentum','best_hidden_layer_sizes','hidden_layers']
 	cv_file = root + r"/i-0_t-80_T-20/i-0_t-80_ts-100/nnets/{0}/{0}.grid_search_cv_results.csv"
-	classifier_fn = lambda x : RunNeuralNetClassifier(x,positive_class_label=pos_class,one_hot_encoding_cols=['A1','A4','A5','A6','A7','A9','A10','A12','A13'],cv_file_format=cv_file)
+	classifier_fn = lambda x : RunNeuralNetClassifier(x,cv_scoring='accuracy',positive_class_label=pos_class,one_hot_encoding_cols=['A1','A4','A5','A6','A7','A9','A10','A12','A13'],cv_file_format=cv_file)
 	id="credit.nnet_3_0"
 	algo_folder='nnets'
 	force_computation=True

@@ -19,7 +19,7 @@ def GetIdForConfig(config):
     return "weights-{0}_neighbors-{1}".format(config['weights'], config['neighbors'])
 
 
-def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_class_label=None, metric_fn=None,cv_file=None):
+def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_class_label=None, metric_fn=None,cv_file=None,cv_scoring='f1'):
     file_extn = "csv"
     testfiles = glob.glob("{0}/*.test.{1}".format(datasets_root_folder, file_extn))
     first = True
@@ -55,7 +55,7 @@ def RunKNNClassifier(datasets_root_folder, nominal_value_columns=None, positive_
         param_grid = {'weights': np.array(['uniform', 'distance']), 'n_neighbors': np.array([5, 10, 20, 50])}
         classifier = KNeighborsClassifier()
         if((cv_file is None) or (os.path.isfile(cv_file) == False)):
-            gscv = GridSearchCV(classifier,param_grid,scoring='f1',n_jobs=3)
+            gscv = GridSearchCV(classifier,param_grid,scoring=cv_scoring,n_jobs=3)
             gscv.fit(X,Y)
             _D = pd.DataFrame(gscv.cv_results_)
             best_params = gscv.best_params_
@@ -199,10 +199,10 @@ def RunKnnClassifierOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\
 
 def RunKnnClassifierOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"):
     pos_class="+"
-    metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
+    metric_fn = sl.ComputePrecisionRecallAccuracyForPythonOutputFormat
     keys_to_keep=['dataset_instance','test_split','train_split','random_state','train_split_percent_used','weights','neighbors','modelbuildtimesecs','modelevaltimesecs','best_neighbors','best_weights']
     cv_file = root + r"/i-0_t-80_T-20/i-0_t-80_ts-100/knn/weights-uniform_neighbors--1/weights-uniform_neighbors--1.grid_search_cv_results.csv"
-    classifier_fn = lambda x : RunKNNClassifier(x,['A1','A4','A5','A6','A7','A9','A10','A12','A13'],pos_class,cv_file=cv_file)
+    classifier_fn = lambda x : RunKNNClassifier(x,['A1','A4','A5','A6','A7','A9','A10','A12','A13'],pos_class,cv_file=cv_file,cv_scoring='accuracy')
     id="credit.knn_3_0"
     algo_folder='knn'
     force_computation=True

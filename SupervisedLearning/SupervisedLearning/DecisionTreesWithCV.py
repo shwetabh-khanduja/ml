@@ -111,11 +111,11 @@ def RunDecisionTreesWithOptimalInst(datasets_root_folder,weka_jar_path, cv_resul
 
             filter = lambda x : (x['prune'] == False) & (x[filter_name] == filter_val) & (x['istrain'] == 1) # this will output on the held out set
             filtered_rows = u.FilterRows(cv_results,filter)
-            a = filtered_rows['f']
+            a = filtered_rows['m']
             if(len(a) == 0):
                 print("ignoring : {0}".format(dataset_dir))
                 continue
-            b = np.max(filtered_rows['f'])
+            b = np.max(filtered_rows['m'])
             indxs = np.isclose(a,b)
             best_insts = filtered_rows[indxs]
             best_insts = best_insts.iloc[0]['inst']
@@ -176,7 +176,7 @@ def RunDecisionTreesOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\
 
 def RunDecisionTreesOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset",weka_jar_path="C:\Program Files\Weka-3-8\weka.jar"):
     pos_class="+"
-    metric_fn = sl.GetPrecisionRecallForWekaOutputFile
+    metric_fn = sl.GetPrecisionRecallAccuracyForWekaOutputFile
     keys_to_keep=['dataset_instance','test_split','train_split','random_state','train_split_percent_used','prune','inst','modelbuildtimesecs']
     algo_folder='dt'
     force_computation=True

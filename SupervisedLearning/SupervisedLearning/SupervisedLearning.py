@@ -442,18 +442,26 @@ def EvaluateDecisionTrees(datasets_root_folder,params_to_keep,positive_class,eva
 			evals.append(test_performance_values)
 	u.WriteTextArrayToFile(u.PreparePath("{0}/{1}".format(datasets_root_folder,evaluation_output_filename)),evals)
 
-def GetPrecisionRecallForWekaOutputFile(file,positive_class_label):
+def GetPrecisionRecallForWekaOutputFile(file,positive_class_label,compute_accuracy=False):
     results = pd.read_csv(file)
     actual = results['actual'].map(lambda x : 1 if(x.split(':')[1] == positive_class_label) else 0)
     predicted = results['predicted'].map(lambda x : 1 if(x.split(':')[1] == positive_class_label) else 0)
     p,r,f,s = precision_recall_fscore_support(actual,predicted,average='binary')
-    f = accuracy_score(actual,predicted)
+    if(compute_accuracy):
+        f = accuracy_score(actual,predicted)
     return [p,r,f]
 
-def ComputePrecisionRecallForPythonOutputFormat(file,positive_class_label,is_file=True):
+def GetPrecisionRecallAccuracyForWekaOutputFile(file,positive_class_label):
+    return GetPrecisionRecallForWekaOutputFile(file,positive_class_label,True)
+
+def ComputePrecisionRecallAccuracyForPythonOutputFormat(file,positive_class_label,is_file=True):
+    return ComputePrecisionRecallForPythonOutputFormat(file,positive_class_label,is_file,True)
+
+def ComputePrecisionRecallForPythonOutputFormat(file,positive_class_label,is_file=True, compute_accuracy=False):
     results = pd.read_csv(file) if is_file else file
     p,r,f,s = precision_recall_fscore_support(results['actual'],results['predicted'],average='binary')
-    f = accuracy_score(results['actual'],results['predicted'])
+    if(compute_accuracy):
+        f = accuracy_score(results['actual'],results['predicted'])
     return [p,r,f]
 
 def GetDictionary(lines_array):

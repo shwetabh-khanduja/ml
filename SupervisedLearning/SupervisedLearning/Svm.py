@@ -17,7 +17,7 @@ import ast
 def GetIdForConfig(config):
     return "cvresults"
 
-def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_class_label=None, cv_file = None):
+def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_class_label=None, cv_file = None, cv_scoring='f1'):
     file_extn = "csv"
     testfiles = glob.glob("{0}/*.test.{1}".format(datasets_root_folder, file_extn))
     realtestfiles = glob.glob("{0}/*.realtest.{1}".format(datasets_root_folder, file_extn))
@@ -68,7 +68,7 @@ def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_
                     ]
         classifier = SVC(cache_size=1500, random_state=int(params_info_dict['random_state']))
         if((cv_file is None) or (os.path.isfile(cv_file) == False)):
-            gscv = GridSearchCV(classifier,param_grid,scoring='f1',n_jobs=3)
+            gscv = GridSearchCV(classifier,param_grid,scoring=cv_scoring,n_jobs=3)
             gscv.fit(X,Y)
             _D = pd.DataFrame(gscv.cv_results_)
             best_params = gscv.best_params_
@@ -158,7 +158,7 @@ def RunSvmClassifierOnVowelRecognitionDataset(root=r"C:\Users\shkhandu\OneDrive\
 
 def RunSvmClassifierOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset"):
     pos_class="+"
-    metric_fn = sl.ComputePrecisionRecallForPythonOutputFormat
+    metric_fn = sl.ComputePrecisionRecallAccuracyForPythonOutputFormat
     keys_to_keep=['dataset_instance','test_split','train_split','random_state','train_split_percent_used','kernel','C','gamma','degree','modelbuildtimesecs','modelevaltimesecs','numsupportvectors']
     cv_file = root + r"/i-0_t-80_T-20/i-0_t-80_ts-100/svm/cvresults/cvresults.grid_search_cv_results.csv"
     classifier_fn = lambda x : RunSVMClassifier(x,['A1','A4','A5','A6','A7','A9','A10','A12','A13'],pos_class,cv_file)

@@ -23,7 +23,7 @@ def TestPlotting():
     plt.show(fig)
 
 def GetAggMetrics(data, gpby=['train_split_percent_used', 'prune', 'istrain'], dataset_type_col_idx=0,
-                  col_funcs={'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
+                  col_funcs={'p': ['mean', 'std'], 'r': ['mean', 'std'], 'm': [
         'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std']}):
     groupby_cols = gpby
     data_grouped = data.groupby(groupby_cols, as_index=False)
@@ -40,13 +40,13 @@ def AdaBoostAnalysis(
     data_all = pd.read_csv(metrics_file)
     dataset_types = ['train_split_percent_used',
                      'imbalance_perc', 'noise_perc']
-    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
+    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'm': [
         'mean', 'std']}
 
     mapping_output_words = {
         'p': 'Precision',
         'r': 'Recall',
-        'f': 'F-Measure',
+        'm': 'F-Measure',
         dataset_types[0]: 'Train size % used',
         dataset_types[1]: 'Fraction of postives to negatives',
         dataset_types[2]: 'Noise %',
@@ -96,13 +96,13 @@ def KnnAnalysis(
     ):
     data_all = pd.read_csv(metrics_file)
     dataset_types = ['train_split_percent_used']
-    col_funcs = {'p': ['mean'], 'r': ['mean'], 'f': [
+    col_funcs = {'p': ['mean'], 'r': ['mean'], 'm': [
         'mean'], 'modelevaltimesecs': ['mean']}
 
     mapping_output_words = {
         'p': 'Precision',
         'r': 'Recall',
-        'f': 'F-Measure',
+        'm': 'F-Measure',
         dataset_types[0]: 'Train size % used',
         dataset_types[1]: 'Fraction of postives to negatives',
         dataset_types[2]: 'Noise %',
@@ -158,17 +158,18 @@ def DecisionTreeAnalysis(
         output_file_prefix,
         metrics_file,
         dataset_filter_fn = None,
-        plt_title = "Decision Trees Performance"):
+        plt_title = "Decision Trees Performance",
+        y_axis_name = 'F-Measure'):
 
     data_all = pd.read_csv(metrics_file)
     dataset_types = ['train_split_percent_used']
-    col_funcs = {'p': ['mean'], 'r': ['mean'], 'f': [
+    col_funcs = {'p': ['mean'], 'r': ['mean'], 'm': [
         'mean'], 'modelbuildtimesecs': ['mean']}
 
     mapping_output_words = {
         'p': 'Precision',
         'r': 'Recall',
-        'f': 'F-Measure',
+        'm': y_axis_name,
         dataset_types[0]: 'Train size % used',
         'modelbuildtimesecs': 'Time to build model (sec)'}
 
@@ -228,17 +229,18 @@ def KnnAnalysisOptK(
         output_root,
         output_file_prefix,
         metrics_file,
-        dataset_filter_fn = None):
+        dataset_filter_fn = None,
+        y_axis_name="F-Measure"):
 
     data_all = pd.read_csv(metrics_file)
     dataset_types = ['train_split_percent_used']
-    col_funcs = {'p': ['mean'], 'r': ['mean'], 'f': [
+    col_funcs = {'p': ['mean'], 'r': ['mean'], 'm': [
         'mean'], 'modelevaltimesecs': ['mean']}
 
     mapping_output_words = {
         'p': 'Precision',
         'r': 'Recall',
-        'f': 'F-Measure',
+        'm': y_axis_name,
         dataset_types[0]: 'Train size % used',
         'modelevaltimesecs': 'Time to build model (sec)'}
 
@@ -278,7 +280,8 @@ def SvmAnalysis(
         output_root,
         output_file_prefix,
         metrics_file,
-        dataset_filter_fn = None):
+        dataset_filter_fn = None,
+        y_axis_name="F-Measure"):
 
     def ComputeTotalSupportVectors(s):
         return np.array([int(t) for t in s.split(';')]).sum()
@@ -286,13 +289,13 @@ def SvmAnalysis(
     data_all = pd.read_csv(metrics_file)
     data_all['numsupportvectors'] = data_all['numsupportvectors'].apply(ComputeTotalSupportVectors)
     dataset_types = ['train_split_percent_used']
-    col_funcs = {'p': ['mean'], 'r': ['mean'], 'f': [
+    col_funcs = {'p': ['mean'], 'r': ['mean'], 'm': [
         'mean'], 'modelbuildtimesecs': ['mean']}
 
     mapping_output_words = {
         'p': 'Precision',
         'r': 'Recall',
-        'f': 'F-Measure',
+        'm': y_axis_name,
         dataset_types[0]: 'Train size % used',
         'modelbuildtimesecs': 'Time to build model (sec)',
         'numsupportvectors': 'Number of Support Vectors'}
@@ -348,7 +351,7 @@ def PlotSupportVectorsOverlap(root, output_file, data_file = None):
     if(data_file is not None):
         pd.DataFrame({'size %':x, 'overlap':y}).to_csv(root + '/' + data_file,index = False)
 
-def PlotCrossValidationCurvesForNNets(rootfolder):
+def PlotCrossValidationCurvesForNNets(rootfolder,y_axis_name="F-Measure"):
     
     roots = [rootfolder + r'/CreditScreeningDataset',rootfolder + r'/LetterRecognition']
     for root in roots:
@@ -359,7 +362,6 @@ def PlotCrossValidationCurvesForNNets(rootfolder):
         cv_save_file = u.PreparePath(dataset_instance_root + "/nnets.{0}.{1}.model_complexity_curves.csv".format(instance,stopping))
         x_axis_name = 'Train size % used'
         parameter_name = 'train_split_percent_used'
-        y_axis_name = 'F-Measure'
         title = 'CV Peformance'
         def parameter_getter(path):
             paramfile = "{0}/nnets/{1}/{1}.params.txt".format(path,stopping)
@@ -375,17 +377,16 @@ def PlotCrossValidationCurvesForNNets(rootfolder):
         plot_output_file = root+ r'/Plots/nnets/cv.small.{0}.nnets.{1}.png'.format(stopping, instance)
         PlotCrossValidationCurves(dataset_instance_root,plot_output_file,x_axis_name,y_axis_name,title,parameter_getter,cv_getter,should_plot=plot_fn)
 
-def PlotCrossValidationCurvesForSvm(rootfolder):
+def PlotCrossValidationCurvesForSvm(rootfolder,y_axis_name="F-Measure", roots=[r'CreditScreeningDataset','LetterRecognition']):
     # root = r'C:/Users/shwet/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition'
     #root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/CreditScreeningDataset'
-    roots = [rootfolder + r'/CreditScreeningDataset',rootfolder + r'/LetterRecognition']
-    for root in roots:    
+    for r in roots:    
+        root = rootfolder + "/" + r
         instance = r'i-0_t-80_T-20'
         dataset_instance_root = root + "/" + instance
         plot_output_file = u.PreparePath(root+ r'/Plots/svm/cv.svm.{0}.png'.format(instance))
         cv_save_file = u.PreparePath(dataset_instance_root + "/svm.{0}.model_complexity_curves.csv".format(instance))
         x_axis_name = 'Train size % used'
-        y_axis_name = 'F-Measure'
         title = 'CV Peformance'
         def parameter_getter(path):
             paramfile = "{0}/svm/cvresults/cvresults.params.txt".format(path)
@@ -415,7 +416,7 @@ def PlotCrossValidationCurvesForWeka(
     y = u.YSeries(y)
     u.SaveDataPlotWithLegends([y],x,plt_output_file,True,x_axis_name,y_axis_name,title)
 
-def PlotCrossValidationCurvesForKnn(rootfolder):
+def PlotCrossValidationCurvesForKnn(rootfolder,y_axis_name="F-Measure"):
     # root = r'C:/Users/shwet/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition'
     #root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/CreditScreeningDataset'
     roots = [rootfolder + r'/CreditScreeningDataset',rootfolder + r'/LetterRecognition']
@@ -425,7 +426,6 @@ def PlotCrossValidationCurvesForKnn(rootfolder):
         plot_output_file = u.PreparePath(root+ r'/Plots/knn/cv.knn.{0}.png'.format(instance))
         cv_save_file = u.PreparePath(dataset_instance_root + "/knn.{0}.model_complexity_curves.csv".format(instance))
         x_axis_name = 'Model complexity'
-        y_axis_name = 'F-Measure'
         title = 'CV Peformance'
         def parameter_getter(path):
             paramfile = "{0}/knn/weights-uniform_neighbors--1/weights-uniform_neighbors--1.params.txt".format(path)
@@ -533,190 +533,6 @@ def PlotCrossValidationCurves(
     if(cv_save_file is not None):
         pd.DataFrame(param_dict).transpose().to_csv(cv_save_file)
 
-def GetBestResultsForSvms(metrics_file):
-    dataset_types = ['train_split_percent_used',
-                     'imbalance_perc', 'noise_perc']
-    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
-        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std']}
-    dataset = {'train_split_percent_used' : 'Train size % used', 'imbalance_perc' : 'fraction of positives to negatives', 'noise_perc' : 'noise %'}
-    allresults = None
-    for parameter in dataset_types:
-            def filter_fn(x) : return (x['istrain'] == 0)
-            results = _GetBestResults(metrics_file,dataset[parameter],parameter,"svm", filter_fn,col_funcs)
-            results = results.drop(parameter,axis=1)
-            if allresults is None:
-                allresults = results
-            else:
-                allresults = pd.concat([allresults, results], axis=0, ignore_index=True)
-    return allresults
-
-def GetBestResultsForDecisionTrees(metrics_file):
-    dataset_types = ['train_split_percent_used',
-                     'imbalance_perc', 'noise_perc']
-    prune = [True,False]
-    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
-        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std']}
-    dataset = {'train_split_percent_used' : 'Train size % used', 'imbalance_perc' : 'fraction of positives to negatives', 'noise_perc' : 'noise %'}
-    allresults = None
-    for es in prune:
-        for parameter in dataset_types:
-            def filter_fn(x) : return (x['prune'] == es) & (x['istrain'] == 0)
-            results = _GetBestResults(metrics_file,dataset[parameter],parameter,"dts_prune-{0}".format(es),filter_fn,col_funcs)
-            results = results.drop(parameter,axis=1)
-            if allresults is None:
-                allresults = results
-            else:
-                allresults = pd.concat([allresults, results], axis=0, ignore_index=True)
-    return allresults
-
-def GetBestResultsForAdaboost(metrics_file):
-    dataset_types = ['train_split_percent_used',
-                     'imbalance_perc', 'noise_perc']
-    prune = [True,False]
-    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
-        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std']}
-    dataset = {'train_split_percent_used' : 'Train size % used', 'imbalance_perc' : 'fraction of positives to negatives', 'noise_perc' : 'noise %'}
-    allresults = None
-    alldata = pd.read_csv(metrics_file)
-    for es in prune:
-        for parameter in dataset_types:
-            """
-            beacuse i haven't done cross validation, i have to choose that iteration for each
-            data set that gives the maximum f1 score
-            """
-            def param_filter_fn(x) : return ~(np.isnan(x[parameter]))
-            data = FilterRows(alldata,param_filter_fn)
-            best_results = None
-            filtered_data = data
-            for ds_instance in data['dataset_instance'].unique():
-                for p_instance in data[parameter].unique():
-                    def filter_fn(x) : return (x['prune'] == es) & (x['istrain'] == 0) & (x['dataset_instance'] == ds_instance) & (x[parameter] == p_instance)
-                    filtered_rows = FilterRows(data,filter_fn)
-                    a = filtered_rows['f']
-                    if(len(a) == 0):
-                        print("ignoring : {0} {1}".format(ds_instance,p_instance))
-                        continue
-                    b = np.max(filtered_rows['f'])
-                    indxs = np.isclose(a,b)
-                    best_iters = filtered_rows[indxs]
-                    best_iters = best_iters.iloc[0]['iter']
-                    print("{0} {1} {2} {3}".format(ds_instance,p_instance,str(best_iters),es))
-                    def data_filter_fn(x) : return (x['prune'] == es) & (x['istrain'] == 0) & (x['dataset_instance'] == ds_instance) & (x[parameter] == p_instance) & (x['iter'] == best_iters)
-                    filtered_data = FilterRows(filtered_rows,data_filter_fn)
-                    if best_results is None:
-                        best_results = filtered_data
-                    else:
-                        best_results=pd.concat([best_results,filtered_data],axis = 0,ignore_index=True)
-                    print(len(best_results))
-
-            results = _GetBestResults(metrics_file,dataset[parameter],parameter,"adaboost_prune-{0}".format(es),lambda x : True, col_funcs,data=best_results)
-            results = results.drop(parameter,axis=1)
-            if allresults is None:
-                allresults = results
-            else:
-                allresults = pd.concat([allresults, results], axis=0, ignore_index=True)
-    return allresults
-
-def GetBestResultsForNNets(metrics_file):
-    dataset_types = ['train_split_percent_used',
-                     'imbalance_perc', 'noise_perc']
-    earlystopping = [True,False]
-    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
-        'mean', 'std'], 'modelbuildtimesecs': ['mean', 'std']}
-    dataset = {'train_split_percent_used' : 'Train size % used', 'imbalance_perc' : 'fraction of positives to negatives', 'noise_perc' : 'noise %'}
-    allresults = None
-    for es in earlystopping:
-        for parameter in dataset_types:
-            def filter_fn(x) : return (x['earlystopping'] == es) & (x['istrain'] == 0)
-            results = _GetBestResults(metrics_file,dataset[parameter],parameter,"nnets_earlyStopping-{0}".format(es),filter_fn,col_funcs)
-            results = results.drop(parameter,axis=1)
-            if allresults is None:
-                allresults = results
-            else:
-                allresults = pd.concat([allresults, results], axis=0, ignore_index=True)
-    return allresults
-
-def GetBestResultsForKnn(metrics_file):
-    dataset_types = ['train_split_percent_used',
-                     'imbalance_perc', 'noise_perc']
-    col_funcs = {'p': ['mean', 'std'], 'r': ['mean', 'std'], 'f': [
-        'mean', 'std'], 'modelevaltimesecs': ['mean', 'std']}
-    dataset = {'train_split_percent_used' : 'Train size % used', 'imbalance_perc' : 'fraction of positives to negatives', 'noise_perc' : 'noise %'}
-    allresults = None
-    for parameter in dataset_types:
-            def filter_fn(x) : return (x['weights'] == 'distance') & (x['istrain'] == 0) & (x['neighbors'] == -1)
-            results = _GetBestResults(metrics_file,dataset[parameter],parameter,"knn",filter_fn,col_funcs)
-            results['modelbuildtimesecs_mean'] = results['modelevaltimesecs_mean']
-            results['modelbuildtimesecs_std'] = results['modelevaltimesecs_std']
-            results = results.drop([parameter,'modelevaltimesecs_mean','modelevaltimesecs_std'],axis=1)
-            if allresults is None:
-                allresults = results
-            else:
-                allresults = pd.concat([allresults, results], axis=0, ignore_index=True)
-    return allresults
-
-def GetBestResultsForVowelRecognitionDataset(root_folder, output_path_relvative_to_root="all_performance.csv"):
-    ada_metrics_file = root_folder + r'/eval_agg.vowel.ada_1_all.csv'
-    ada_results = GetBestResultsForAdaboost(ada_metrics_file)
-
-    svm_metrics_file = root_folder + r'/eval_agg.vowel.svm_2_all.csv'
-    svm_results = GetBestResultsForSvms(svm_metrics_file)
-
-    dts_metrics_file = root_folder + r'/eval_agg.vowel.dt_1_all.csv'
-    dts_results = GetBestResultsForDecisionTrees(dts_metrics_file)
-
-    nnets_metrics_file = root_folder + r'/eval_agg.vowel.nnet_2_all.csv'
-    nnets_results = GetBestResultsForNNets(nnets_metrics_file)
-
-    knn_metrics_file = root_folder + r'/eval_agg.vowel.knn_3_all.csv'
-    knn_results = GetBestResultsForKnn(knn_metrics_file)
-
-    output = pd.concat([nnets_results, knn_results, dts_results, svm_results, ada_results], axis=0, ignore_index=True)
-    output_file = u.PreparePath(root_folder+"/"+output_path_relvative_to_root)
-    output.to_csv(output_file,index=False)
-
-    for dataset in output['dataset'].unique():
-        yseries = []
-        markers = u.GetMarkerColorCombinations()
-        metric_plots = {}
-        x = []
-        for algo in output['algorithm'].unique():
-            filter_fn = lambda x : (x['algorithm'] == algo) & (x['dataset'] == dataset)
-            filtered_data = FilterRows(output,filter_fn)
-            data = filtered_data.set_index('parameter')
-            data= data.drop(['algorithm','dataset'],axis=1)
-            data = data.sort_index()
-            x = data.index.values
-            theme = markers.pop()
-            for column in data.columns:
-                y = u.YSeries(data[column].values,points_marker=theme['marker'],line_color=theme['color'],plot_legend_label = algo)
-                if column in metric_plots:
-                    metric_plots[column].append(y)
-                else : 
-                    metric_plots[column] = [y]
-        token_map = {'f' : 'F-Measure','r' : 'Recall','p' : 'Precision','modelbuildtimesecs': 'Time to build model (sec)'}
-        for metric,series in metric_plots.items():
-            outputfilename = u.PreparePath(root_folder+"/Plots/all/{0}-{1}.png".format(dataset,metric))
-            tokens = metric.split('_')
-            y_axis_name = token_map[tokens[0]]
-            x_axis_name = dataset
-            title = dataset+" ({0})".format(tokens[1])
-            u.SaveDataPlotWithLegends(series,x,outputfilename,x_axis_name = x_axis_name,y1_axis_name = y_axis_name,title=title)
-
-def _GetBestResults(metrics_file,dataset,parameter,algorithm,rows_filter_fn,col_fns, data = None):
-    """
-    The final output schema should be : 
-    dataset,parameter,algorithm,f_mean,p_mean,r_mean,time_mean
-    TrainSize,20,earlystop-NNets,0.8,0.8,0.8,1.2
-    """
-    data = pd.read_csv(metrics_file) if data is None else data
-    filtered_data = FilterRows(data,rows_filter_fn)
-    gped_data = GetAggMetrics(filtered_data,gpby=[parameter],col_funcs = col_fns)
-    gped_data['dataset'] = dataset
-    gped_data['parameter'] = gped_data[parameter]
-    gped_data['algorithm'] = algorithm
-    return gped_data
-
 def FilterRows(data, filter_fn):
     return data[data.apply(filter_fn, axis=1)]
 
@@ -724,16 +540,17 @@ def NNetAnalysis(
     output_root,
     output_file_prefix,
     metrics_file,
-    iters_to_ignore):
+    iters_to_ignore,
+    y_axis_name="F-Measure"):
     data_all = pd.read_csv(metrics_file)
     dataset_types = ['train_split_percent_used']
-    col_funcs = {'p': ['mean'], 'r': ['mean'], 'f': [
+    col_funcs = {'p': ['mean'], 'r': ['mean'], 'm': [
         'mean'], 'modelbuildtimesecs': ['mean']}
 
     mapping_output_words = {
         'p': 'Precision',
         'r': 'Recall',
-        'f': 'F-Measure',
+        'm': y_axis_name,
         dataset_types[0]: 'Train size % used',
         'modelbuildtimesecs': 'Time to build model (sec)'}
 
@@ -784,7 +601,7 @@ def NNetAnalysis(
                                                   True, mapping_output_words[dataset_type], mapping_output_words[k], 'Neural Nets Performance'.format(agg))
     return data_agg
 
-def PlotAdaboostPerIterationCurves(file_template, filter, plot_output_file, iters):
+def PlotAdaboostPerIterationCurves(file_template, filter, plot_output_file, iters, y_axis_name='F-Measure'):
     ts = [20,30,40,50,60,70,80,90,100]
     colors = u.GetColorCombinations()
     y = []
@@ -797,12 +614,12 @@ def PlotAdaboostPerIterationCurves(file_template, filter, plot_output_file, iter
         train_y = []
         test_y = []
         for iter in iters:
-            train_y.append(train_data.loc[iter]['f'])
-            test_y.append(test_data.loc[iter]['f'])
+            train_y.append(train_data.loc[iter]['m'])
+            test_y.append(test_data.loc[iter]['m'])
         c = colors.pop()
         y.append(u.YSeries(train_y,points_marker='o',line_color=c['color'],plot_legend_label=str(_ts)+"-train"))
         y.append(u.YSeries(test_y,points_marker='x',line_color=c['color'],plot_legend_label=str(_ts)+"-validation"))
-    u.SaveDataPlotWithLegends(y,iters,plot_output_file,x_axis_name = "num of iters/weak learners",y1_axis_name='f-measure')
+    u.SaveDataPlotWithLegends(y,iters,plot_output_file,x_axis_name = "num of iters/weak learners",y1_axis_name=y_axis_name)
 
 def PlotLossCurvesForNeuralNets(metrics_file, output_file_template):
     metrics = pd.read_csv(metrics_file)
@@ -821,7 +638,7 @@ def PlotLossCurvesForNeuralNets(metrics_file, output_file_template):
         u.SaveDataPlotWithLegends(y,None,filename,x_axis_name="epochs",y1_axis_name="train loss",x_limits=[1,200])
         y.clear()
 
-def ComputePerformanceOnRealTestSet(model_info,root,outputfile,weka_jar,pos_class):
+def ComputePerformanceOnRealTestSet(model_info,root,outputfile,weka_jar,pos_class,compute_accuracy=False):
 
     models = ['ada','dt','svm','nnets','knn']
     f = []
@@ -832,31 +649,31 @@ def ComputePerformanceOnRealTestSet(model_info,root,outputfile,weka_jar,pos_clas
             wekajar = weka_jar
             if(model == 'ada'):
                 _outputfile = "{0}/realtest.prediction.ada.csv".format(root)
-                _f = ComputeWekaSavedModelPerformance(testfile,modelfile,weka_jar,_outputfile,ada.GetWekaCommandLineForConfig,pos_class)
+                _f = ComputeWekaSavedModelPerformance(testfile,modelfile,weka_jar,_outputfile,ada.GetWekaCommandLineForConfig,pos_class,compute_accuracy)
             else:
                 _outputfile = "{0}/realtest.prediction.dt.csv".format(root)
-                _f = ComputeWekaSavedModelPerformance(testfile,modelfile,weka_jar,_outputfile,dt.GetWekaCommandLineForConfig,pos_class)
+                _f = ComputeWekaSavedModelPerformance(testfile,modelfile,weka_jar,_outputfile,dt.GetWekaCommandLineForConfig,pos_class,compute_accuracy)
         else:
             datafolder = "{0}/i-0_t-80_ts-{1}".format(root,model_info[model][1])
             testfile = glob.glob("{0}/*.realtest.preprocessed.data*".format(datafolder))[0]
             labelfile = glob.glob("{0}/*.realtest.preprocessed.label*".format(datafolder))[0]
-            _f = ComputeSklearnSavedModelPerformance(testfile,labelfile,root+'/'+ model_info[model][0],pos_class)
+            _f = ComputeSklearnSavedModelPerformance(testfile,labelfile,root+'/'+ model_info[model][0],pos_class,compute_accuracy)
         f.append(_f)
     lines = [u.ConcatToStr(",",models),u.ConcatToStr(",",f)]
     u.WriteTextArrayToFile(root + '/'+ outputfile,lines)
 
-def ComputeSklearnSavedModelPerformance(datafile,labelfile,modelpath,pos_class):
+def ComputeSklearnSavedModelPerformance(datafile,labelfile,modelpath,pos_class,compute_accuracy):
     model = u.ReadBinaryFile(modelpath)
     data = pd.read_csv(datafile,header = None)
     labels = pd.read_csv(labelfile,header=None)[0]
     start = time.clock()
     score = model.predict(data)
     end = time.clock()
-    p,r,f = sl.ComputePrecisionRecallForPythonOutputFormat(pd.DataFrame({'predicted':score,'actual':labels}),pos_class,False)
+    p,r,f = sl.ComputePrecisionRecallForPythonOutputFormat(pd.DataFrame({'predicted':score,'actual':labels}),pos_class,False,compute_accuracy)
     print("{0} -> {1}".format(modelpath,str(end - start)))
     return f;
 
-def ComputeWekaSavedModelPerformance(datafile,modelpath,wekajar,outputfile,cmdline_generation_fn,pos_class):
+def ComputeWekaSavedModelPerformance(datafile,modelpath,wekajar,outputfile,cmdline_generation_fn,pos_class,compute_accuracy):
     config = {}
     config['wekajar'] = wekajar
     config['testset'] = datafile
@@ -867,7 +684,7 @@ def ComputeWekaSavedModelPerformance(datafile,modelpath,wekajar,outputfile,cmdli
     sl.RunCmdWithoutConsoleWindow(cmdline)
     end = time.clock()
     print("{0} -> {1}".format(modelpath,str(end - start)))
-    p,r,f = sl.GetPrecisionRecallForWekaOutputFile(outputfile,pos_class)
+    p,r,f = sl.GetPrecisionRecallForWekaOutputFile(outputfile,pos_class,compute_accuracy)
     return f
 
 def main():
