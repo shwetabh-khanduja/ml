@@ -146,12 +146,12 @@ def EvaluateBestModelsOnRealTestSet(root, weka):
     credit_model_info = {'svm':(r'i-0_t-80_ts-60/svm/cvresults/cvresults.model','60'),
                   'ada':r'i-0_t-80_ts-80/ada/prune-False_optiter-20/prune-False_optiter-20.model',
                   'dt':r'i-0_t-80_ts-60/dt/prune-True_optinst-8/prune-True_optinst-8.model',
-                  'nnets':(r'i-0_t-80_ts-60/nnets/earlystop-False/earlystop-False.model','60'),
+                  'nnets':(r'i-0_t-80_ts-100/nnets/earlystop-False/earlystop-False.model','100'),
                   'knn':(r'i-0_t-80_ts-80/knn/weights-uniform_neighbors--1/weights-uniform_neighbors--1.model','80')}
 
     vowel_model_info = {'svm':(r'i-0_t-80_ts-100/svm/cvresults/cvresults.model','100'),
                   'ada':r'i-0_t-80_ts-90/ada/prune-False_optiter-50/prune-False_optiter-50.model',
-                  'dt':r'i-0_t-80_ts-90/dt/prune-True_optinst-2/prune-True_optinst-2.model',
+                  'dt':r'i-0_t-80_ts-90/dt/prune-False_optinst-2/prune-False_optinst-2.model',
                   'nnets':(r'i-0_t-80_ts-90/nnets/earlystop-False/earlystop-False.model','90'),
                   'knn':(r'i-0_t-80_ts-100/knn/weights-uniform_neighbors--1/weights-uniform_neighbors--1.model','100')}
 
@@ -162,11 +162,11 @@ def main():
     root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets'
     weka_jar_path = "C:/Program Files/Weka-3-8/weka.jar"
     GenerateResultsForSvm(root)
-    #GenerateResultsForDecisionTrees(root, weka_jar_path)
-    #GenerateResultsForAdaboost(root, weka_jar_path)
-    #GenerateResultsForNNets(root)
-    #GenerateResultsForKnn(root)
-    #EvaluateBestModelsOnRealTestSet(root,weka_jar_path)
+    GenerateResultsForDecisionTrees(root, weka_jar_path)
+    GenerateResultsForAdaboost(root, weka_jar_path)
+    GenerateResultsForNNets(root)
+    GenerateResultsForKnn(root)
+    EvaluateBestModelsOnRealTestSet(root,weka_jar_path)
 
 if __name__ == '__main__':
     main()

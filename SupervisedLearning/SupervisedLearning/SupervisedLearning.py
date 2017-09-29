@@ -4,7 +4,6 @@ import pandas as pd
 import utils as u
 from sklearn.model_selection import train_test_split
 import glob
-import DecisionTreeRunConfig as dtc
 import timeit
 import os
 import subprocess as sb
@@ -209,50 +208,6 @@ def GenerateCreditScreeningDataSetSplits(
 	if(noise_percs is not None):
 		GenerateDatasetSplitsForWithNoise(rootFolder,"noise" + str(id),data,test_perc,train_perc,0,noise_percs,class_col_name,flip_fn,random_state,arff_attrs)
 
-def RunDecisionTrees(datasets_root_folder,use_arff_files=True):
-	file_extn = "arff" if use_arff_files else ".csv"
-	testfiles = glob.glob("{0}/*.test.{1}".format(datasets_root_folder,file_extn))
-	weka_jar_path = "C:\Program Files\Weka-3-8\weka.jar"
-
-	for dataset_dir in u.Get_Subdirectories(datasets_root_folder):
-		trainfile = glob.glob("{0}/*.train.{1}".format(dataset_dir,file_extn))[0]
-		paramfile = glob.glob("{0}/*.params.txt".format(dataset_dir,file_extn))[0]
-		dt_root = u.PreparePath(dataset_dir+"/dt",is_file=False)
-		config_gen = dtc.DecisionTreeRunConfig(prune=[True,False],numfolds=[3],minleafsize=[2])
-		config = config_gen.GetNextConfigAlongWithIdentifier()
-		while(config is not None):
-			id = config["id"]
-			params_info = u.ReadLinesFromFile(paramfile)
-			run_output_dir = u.PreparePath("{0}/{1}".format(dt_root,id),is_file=False)
-			params_output_file=u.PreparePath("{0}/{1}.params.txt".format(run_output_dir,id))
-			model_output_file=u.PreparePath("{0}/{1}.model".format(run_output_dir,id))
-			train_output_file=u.PreparePath("{0}/{1}.train.predictions.csv".format(run_output_dir,id))
-			test_output_file=u.PreparePath("{0}/{1}.test.predictions.csv".format(run_output_dir,id))
-
-			config["wekajar"] = weka_jar_path
-			config["trainset"] = trainfile
-			config["class"]="last"
-			config["trainpredictionoutputfile"]=train_output_file
-			config["predictionoutputfile"] = config["trainpredictionoutputfile"]
-			config["modeloutputfile"] = model_output_file
-			config["testpredictionoutputfile"] = test_output_file
-
-			# for every config there has to be a train prediction and test prediction
-			cmd = config_gen.GenerateWekaCommandline(config)
-			config["modelbuildtimesecs"] = timeit.timeit(lambda: RunCmdWithoutConsoleWindow(cmd),number=1)
-			
-			# now for test set
-			config["predictionoutputfile"] = test_output_file
-			config["testset"] = testfiles[0]
-			cmd = config_gen.GenerateWekaCommandline(config)
-			config["modelevaltimesecs"] = timeit.timeit(lambda : RunCmdWithoutConsoleWindow(cmd),number=1)
-
-			for k in config:
-				params_info.append("{0}={1}".format(k,config[k]))
-			u.WriteTextArrayToFile(params_output_file,params_info)
-			config = config_gen.GetNextConfigAlongWithIdentifier()
-		print("done dataset : " + dataset_dir)
-
 def RunCmdWithoutConsoleWindow(cmd):
 	CREATE_NO_WINDOW = 0x08000000
 	#return sb.Popen(cmd, creationflags=CREATE_NO_WINDOW, stdout=sb.PIPE,shell=True)
@@ -411,36 +366,6 @@ def CreateNoisyDataset(data,class_col,flip_frac,rand,flip_fn):
 		values[idx] = flip_fn(values[idx])
 	data[class_col] = values
 	return data
-
-def EvaluateDecisionTrees(datasets_root_folder,params_to_keep,positive_class,evaluation_output_filename="performance.csv"):
-	headers=[]
-	headers.extend(params_to_keep)
-	headers.extend(['istrain','p','r','f'])
-	headers = ",".join(headers)
-	evals = []
-	evals.append(headers)
-	for directory in u.Get_Subdirectories(datasets_root_folder):
-		#each directory is a dataset directory
-		dt_output_dir = "{0}/dt".format(directory)
-		for run_output_folder in u.Get_Subdirectories(dt_output_dir):
-			#read params file
-			params_file_path = glob.glob("{0}/*.params.txt".format(run_output_folder))[0]
-			params = GetDictionary(u.ReadLinesFromFile(params_file_path))
-			values = []
-			for k in params_to_keep:
-				if(k in params):
-					values.append(str(params[k]))
-				else:
-					values.append(str(np.NaN))
-			p,r,f=GetPrecisionRecallForWekaOutputFile(params["trainpredictionoutputfile"],positive_class)
-			train_performance_values = ",".join(values)
-			train_performance_values = "{0},1,{1},{2},{3}".format(",".join(values),str(p),str(r),str(f))
-			p,r,f=GetPrecisionRecallForWekaOutputFile(params["testpredictionoutputfile"],positive_class)
-			test_performance_values = ",".join(values)
-			test_performance_values = "{0},0,{1},{2},{3}".format(",".join(values),str(p),str(r),str(f))
-			evals.append(train_performance_values)
-			evals.append(test_performance_values)
-	u.WriteTextArrayToFile(u.PreparePath("{0}/{1}".format(datasets_root_folder,evaluation_output_filename)),evals)
 
 def GetPrecisionRecallForWekaOutputFile(file,positive_class_label,compute_accuracy=False):
     results = pd.read_csv(file)

@@ -642,6 +642,7 @@ def ComputePerformanceOnRealTestSet(model_info,root,outputfile,weka_jar,pos_clas
 
     models = ['ada','dt','svm','nnets','knn']
     f = []
+    t = []
     for model in models:
         if((model == 'ada') | (model == 'dt')):
             testfile = glob.glob("{0}/*.realtest.arff".format(root))[0]
@@ -649,18 +650,22 @@ def ComputePerformanceOnRealTestSet(model_info,root,outputfile,weka_jar,pos_clas
             wekajar = weka_jar
             if(model == 'ada'):
                 _outputfile = "{0}/realtest.prediction.ada.csv".format(root)
-                _f = ComputeWekaSavedModelPerformance(testfile,modelfile,weka_jar,_outputfile,ada.GetWekaCommandLineForConfig,pos_class,compute_accuracy)
+                _f,_t = ComputeWekaSavedModelPerformance(testfile,modelfile,weka_jar,_outputfile,ada.GetWekaCommandLineForConfig,pos_class,compute_accuracy)
             else:
                 _outputfile = "{0}/realtest.prediction.dt.csv".format(root)
-                _f = ComputeWekaSavedModelPerformance(testfile,modelfile,weka_jar,_outputfile,dt.GetWekaCommandLineForConfig,pos_class,compute_accuracy)
+                _f,_t = ComputeWekaSavedModelPerformance(testfile,modelfile,weka_jar,_outputfile,dt.GetWekaCommandLineForConfig,pos_class,compute_accuracy)
         else:
             datafolder = "{0}/i-0_t-80_ts-{1}".format(root,model_info[model][1])
             testfile = glob.glob("{0}/*.realtest.preprocessed.data*".format(datafolder))[0]
             labelfile = glob.glob("{0}/*.realtest.preprocessed.label*".format(datafolder))[0]
-            _f = ComputeSklearnSavedModelPerformance(testfile,labelfile,root+'/'+ model_info[model][0],pos_class,compute_accuracy)
+            _f,_t = ComputeSklearnSavedModelPerformance(testfile,labelfile,root+'/'+ model_info[model][0],pos_class,compute_accuracy)
         f.append(_f)
+        t.append(_t)
+    file = root + '/'+ outputfile
     lines = [u.ConcatToStr(",",models),u.ConcatToStr(",",f)]
-    u.WriteTextArrayToFile(root + '/'+ outputfile,lines)
+    u.WriteTextArrayToFile(file, lines)
+    lines = [u.ConcatToStr(",",models),u.ConcatToStr(",",t)]
+    u.WriteTextArrayToFile(file.replace(".csv",".time.csv"),lines)
 
 def ComputeSklearnSavedModelPerformance(datafile,labelfile,modelpath,pos_class,compute_accuracy):
     model = u.ReadBinaryFile(modelpath)
@@ -671,7 +676,7 @@ def ComputeSklearnSavedModelPerformance(datafile,labelfile,modelpath,pos_class,c
     end = time.clock()
     p,r,f = sl.ComputePrecisionRecallForPythonOutputFormat(pd.DataFrame({'predicted':score,'actual':labels}),pos_class,False,compute_accuracy)
     print("{0} -> {1}".format(modelpath,str(end - start)))
-    return f;
+    return f,end-start;
 
 def ComputeWekaSavedModelPerformance(datafile,modelpath,wekajar,outputfile,cmdline_generation_fn,pos_class,compute_accuracy):
     config = {}
@@ -685,7 +690,7 @@ def ComputeWekaSavedModelPerformance(datafile,modelpath,wekajar,outputfile,cmdli
     end = time.clock()
     print("{0} -> {1}".format(modelpath,str(end - start)))
     p,r,f = sl.GetPrecisionRecallForWekaOutputFile(outputfile,pos_class,compute_accuracy)
-    return f
+    return f, end-start
 
 def main():
     root = r"C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets"

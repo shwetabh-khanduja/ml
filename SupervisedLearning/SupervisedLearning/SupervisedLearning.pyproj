@@ -27,9 +27,6 @@
     <Compile Include="DatasetCreation.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DecisionTree.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="DecisionTreeRunConfig.py">
       <SubType>Code</SubType>
     </Compile>

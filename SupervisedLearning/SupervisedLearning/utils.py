@@ -232,8 +232,10 @@ def PreparePath(path, is_file=True):
 
 
 def Get_Subdirectories(a_dir):
-    return [os.path.join(a_dir, name) for name in os.listdir(a_dir)
+    l = [os.path.join(a_dir, name) for name in os.listdir(a_dir)
             if os.path.isdir(os.path.join(a_dir, name))]
+    l.sort()
+    return l
 
 def FilterRows(data, filter_fn):
     return data[data.apply(filter_fn, axis=1)]

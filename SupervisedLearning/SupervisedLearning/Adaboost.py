@@ -107,7 +107,8 @@ def RunAdaBoostWithDecisionTrees(datasets_root_folder,weka_jar_path,inst,use_arf
         trainfile = glob.glob("{0}/*.train.{1}".format(dataset_dir,file_extn))[0]
         paramfile = glob.glob("{0}/*.params.txt".format(dataset_dir))[0]
         dir_path = dataset_dir+"/ada"
-        shutil.rmtree(dir_path)
+        if(os.path.isdir(dir_path)):
+            shutil.rmtree(dir_path)
         dt_root = u.PreparePath(dir_path,is_file=False)
         config_gen = ParameterGrid({'prune':[False],'iter':[2,5,10,20,25,30,50]})
         for config in config_gen:
