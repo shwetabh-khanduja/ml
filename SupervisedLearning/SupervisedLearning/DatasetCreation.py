@@ -28,7 +28,7 @@ def CreateCharacterRecognitionDatasetInstance(
 		
 def main():
 	CreateCharacterRecognitionDatasetInstance(r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/LetterRecognition')
-	CreateCreditScreeningDatasetInstance(r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/CreditScreeningDataset')
+	#CreateCreditScreeningDatasetInstance(r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets/CreditScreeningDataset')
 
 if __name__ == '__main__':
 	main()

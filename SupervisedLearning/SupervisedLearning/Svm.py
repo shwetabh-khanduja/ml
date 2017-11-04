@@ -62,6 +62,11 @@ def RunSVMClassifier(datasets_root_folder, nominal_value_columns=None, positive_
         np.savetxt(realtest_data_file,realtest_X,delimiter=',')
         np.savetxt(realtest_label_file,realtest_Y,delimiter=',')
 
+        dataset_size = GetDataSetSize(dataset_dir);
+        StoreData("train.csv","train_label.csv",X,Y,dataset_size)
+        StoreData("validation.csv","validation_label.csv",test_X,test_Y,dataset_size)
+        StoreData("test.csv","test_label.csv",realtest_X,realtest_Y,dataset_size)
+
         param_grid = [
                         {'C': [0.1, 1, 10, 100, 1000], 'degree' : [2,3,4],'kernel': ['poly']},
                         {'C': [0.1, 1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
@@ -170,6 +175,19 @@ def RunSvmClassifierOnCreditScreeningDataset(root=r"C:\Users\shkhandu\OneDrive\G
 def main():
     RunSvmClassifierOnCreditScreeningDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\CreditScreeningDataset")
     RunSvmClassifierOnVowelRecognitionDataset(r"C:\Users\shwet\OneDrive\Gatech\Courses\ML\DataSets\LetterRecognition")
+
+def GetDataSetSize(path):
+    for i in [20,30,40,50,60,70,80,90,100]:
+        if "ts-{0}".format(str(i)) in path:
+            return i
+    raise IndexError("size not found")
+
+def StoreData(data_file_name, label_file_name, data, labels, size):
+    root = u.PreparePath("c:/Users/shkhandu/OneDrive/Gatech/Courses/ML/Assignment2/VowelRecognition/{0}".format(str(size)),is_file=False);
+    data_file = root + "/" + data_file_name;
+    label_file = root + "/" + label_file_name;
+    np.savetxt(data_file,data,delimiter=",")
+    np.savetxt(label_file,labels,delimiter=",")
 
 if __name__ == '__main__':
     main()

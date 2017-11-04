@@ -95,8 +95,8 @@ def GenerateResultsForAdaboost(root, weka_jar_path):
     ea.PlotAdaboostPerIterationCurves(root + '/LetterRecognition/eval_agg.vowel.ada_3_ts-{0}.csv',lambda x : x['prune'] == True,root + '/LetterRecognition/Plots/ada/vowel.prune.itercurves.png',[2,10,20,30,50]);
 
 def GenerateResultsForSvm(root):
-    Svm.RunSvmClassifierOnCreditScreeningDataset(root + r"/CreditScreeningDataset")
-    ea.PlotCrossValidationCurvesForSvm(root,y_axis_name='Accuracy',roots=['CreditScreeningDataset'])
+    #Svm.RunSvmClassifierOnCreditScreeningDataset(root + r"/CreditScreeningDataset")
+    #ea.PlotCrossValidationCurvesForSvm(root,y_axis_name='Accuracy',roots=['CreditScreeningDataset'])
     Svm.RunSvmClassifierOnVowelRecognitionDataset(root + r"/LetterRecognition")
     ea.PlotCrossValidationCurvesForSvm(root,roots=['LetterRecognition'])
 
@@ -115,23 +115,23 @@ def GenerateResultsForSvm(root):
     ea.PlotSupportVectorsOverlap(root + "/CreditScreeningDataset",r"Plots/svm/credit.support_overlap.png","i-0_t-80_T-20/credit.support_overlap.csv")
 
 def GenerateResultsForNNets(root):
-    nn.RunNeuralNetsOnCreditScreeningDataset(root + r"/CreditScreeningDataset")
+    #nn.RunNeuralNetsOnCreditScreeningDataset(root + r"/CreditScreeningDataset")
     nn.RunNeuralNetsOnVowelRecognitionDataset(root + r"/LetterRecognition")
     ea.PlotCrossValidationCurvesForNNets(root,y_axis_name='Accuracy')
-    ea.NNetAnalysis(
-        root + r'/CreditScreeningDataset/Plots/nnets',
-        'dt.creditscreening',
-        root + r'/CreditScreeningDataset/eval_agg.credit.nnet_3_0.csv',
-        0,y_axis_name='Accuracy')
+    #ea.NNetAnalysis(
+    #    root + r'/CreditScreeningDataset/Plots/nnets',
+    #    'dt.creditscreening',
+    #    root + r'/CreditScreeningDataset/eval_agg.credit.nnet_3_0.csv',
+    #    0,y_axis_name='Accuracy')
 
-    ea.NNetAnalysis(
-        root + r'/LetterRecognition/Plots/nnets',
-        'dt.vowelrecognition',
-        root + r'/LetterRecognition/eval_agg.vowel.nnet_3_0.csv',
-        0)
+    #ea.NNetAnalysis(
+    #    root + r'/LetterRecognition/Plots/nnets',
+    #    'dt.vowelrecognition',
+    #    root + r'/LetterRecognition/eval_agg.vowel.nnet_3_0.csv',
+    #    0)
 
-    ea.PlotLossCurvesForNeuralNets(root + r'/CreditScreeningDataset/eval_agg.credit.nnet_3_0.csv', root + '/CreditScreeningDataset/Plots/nnets/credit.losscurve.earlystop-{0}.png')
-    ea.PlotLossCurvesForNeuralNets(root + r'/LetterRecognition/eval_agg.vowel.nnet_3_0.csv', root + '/LetterRecognition/Plots/nnets/vowel.losscurve.earlystop-{0}.png')
+    #ea.PlotLossCurvesForNeuralNets(root + r'/CreditScreeningDataset/eval_agg.credit.nnet_3_0.csv', root + '/CreditScreeningDataset/Plots/nnets/credit.losscurve.earlystop-{0}.png')
+    #ea.PlotLossCurvesForNeuralNets(root + r'/LetterRecognition/eval_agg.vowel.nnet_3_0.csv', root + '/LetterRecognition/Plots/nnets/vowel.losscurve.earlystop-{0}.png')
 
 def GenerateResultsForKnn(root):
     knn.RunKnnClassifierOnCreditScreeningDataset(root+r'/CreditScreeningDataset')
@@ -161,12 +161,12 @@ def EvaluateBestModelsOnRealTestSet(root, weka):
 def main():
     root = r'C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/DataSets'
     weka_jar_path = "C:/Program Files/Weka-3-8/weka.jar"
-    GenerateResultsForSvm(root)
-    GenerateResultsForDecisionTrees(root, weka_jar_path)
-    GenerateResultsForAdaboost(root, weka_jar_path)
+    #GenerateResultsForSvm(root)
+    #GenerateResultsForDecisionTrees(root, weka_jar_path)
+    #GenerateResultsForAdaboost(root, weka_jar_path)
     GenerateResultsForNNets(root)
-    GenerateResultsForKnn(root)
-    EvaluateBestModelsOnRealTestSet(root,weka_jar_path)
+    #GenerateResultsForKnn(root)
+    #EvaluateBestModelsOnRealTestSet(root,weka_jar_path)
 
 if __name__ == '__main__':
     main()

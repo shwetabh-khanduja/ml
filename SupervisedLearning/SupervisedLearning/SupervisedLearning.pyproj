@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>60429092-0e9d-44b6-8f5e-e1e0b856ff3f</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>AllExperimentsRunner.py</StartupFile>
+    <StartupFile>UnsupervisedLearningMain.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -40,8 +40,14 @@
     <Compile Include="NeuralNetworkRunConfig.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="RandomisedAlgorithmsAnalysis.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="SupervisedLearning.py" />
     <Compile Include="Svm.py" />
+    <Compile Include="UnsupervisedLearningMain.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="utils.py">
       <SubType>Code</SubType>
     </Compile>

@@ -73,7 +73,7 @@ def RunNeuralNetClassifier(datasets_root_folder,one_hot_encoding_cols=None, posi
 
             hidden_layers = [(10,),(30,),(50,),(70,)]
             init_learning_rates = [0.1,0.01,0.001,0.0001]
-            alpha =[0.01,0.001,0.0001,0.00001]
+            alpha =[0.01,0.1,1,10,100]
             momentum = 0.9
             max_iter = 200
             early_stopping = config["earlystopping"]

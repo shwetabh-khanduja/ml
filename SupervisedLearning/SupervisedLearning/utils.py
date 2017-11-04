@@ -6,6 +6,10 @@ import random
 from sklearn.model_selection import ParameterGrid
 import pandas as pd
 import pickle
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+import numpy as np
 
 def WriteTextToFile(file, text):
     f = open(file, 'w')
@@ -41,7 +45,7 @@ def ReadLineFromFile(file, line_idx):
     return line_at_idx
 
 def SaveDataPlotWithLegends(YSeries_array,
-                 x,
+                 x=None,
                  filename=None,
                  dispose_fig=True,
                  x_axis_name="",
@@ -63,6 +67,63 @@ def SaveDataPlotWithLegends(YSeries_array,
         else:
             x_values = x
         ax1.plot(x_values, y.values, linestyle=y.line_style,
+                    color=y.line_color, marker=y.points_marker)
+        if(y.plot_legend_label is not None):
+            legends.append(
+                mlines.Line2D([], [],
+                                color=y.line_color,
+                                linestyle='',
+                                marker=y.legend_marker,
+                                label=y.plot_legend_label))
+
+    ax1.set_xlabel(x_axis_name)
+    ax1.set_ylabel(y1_axis_name)
+    if(y_limits is not None):
+        ax1.set_ylim(y_limits)
+    if(x_limits is not None):
+        ax1.set_xlim(x_limits)
+    if(len(legends) > 0):
+        lgd = plt.legend(handles=legends,bbox_to_anchor=(1, 1),loc=legend_loc)
+
+    if(title != "" or title is not None):
+        plt.title(title)
+
+    if filename is not None:
+        if(len(legends) > 0):
+            fig.savefig(filename,bbox_extra_artists=(lgd,), bbox_inches='tight')
+        else:
+            fig.savefig(filename)
+        
+
+    if dispose_fig is True:
+        plt.close(fig)
+        return [None, None]
+    else:
+        return [fig, ax1]
+
+def SaveScatterPlotWithLegends(YSeries_array,
+                 x=None,
+                 filename=None,
+                 dispose_fig=True,
+                 x_axis_name="",
+                 y1_axis_name="",
+                 title="",
+                 legend_loc = 2,
+                 y_limits = None,
+                 x_limits = None):
+
+    # https://stackoverflow.com/questions/8409095/matplotlib-set-markers-for-individual-points-on-a-line
+    fig, ax1 = plt.subplots()
+    legends = []
+    for y in YSeries_array:
+        if(y.xvalues is not None):
+            x_values = y.xvalues
+        elif(type(x[0]) == str):
+            x_values = np.arange(len(x))
+            plt.xticks(x_values,x)
+        else:
+            x_values = x
+        ax1.scatter(x_values, y.values, linestyle=y.line_style,
                     color=y.line_color, marker=y.points_marker)
         if(y.plot_legend_label is not None):
             legends.append(
@@ -260,6 +321,25 @@ def GetColorCombinations(seed = 0):
 def WriteBinaryFile(filename, binobj):
     with open(filename, 'wb') as handle:
         pickle.dump(binobj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+def Plot3D(X,Y,Z):
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    _X, _Y = np.meshgrid(X, Y)
+
+    # Plot the surface.
+    surf = ax.plot_surface(_X, _Y, Z, cmap=cm.coolwarm,
+                           linewidth=0, antialiased=False)
+
+    # Customize the z axis.
+    ax.set_zlim(-1.01, 1.01)
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+
+    # Add a color bar which maps values to colors.
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+    return fig;
 
 def ReadBinaryFile(filename):
     with open(filename, 'rb') as handle:

@@ -397,11 +397,17 @@ def GetDictionary(lines_array):
 	return d
 
 def GetOneHotEncodingForDataFrame(dataframe,columns_to_encode):
-	for col in columns_to_encode:
-		enc = pd.get_dummies(dataframe[col],prefix=col)
-		dataframe = dataframe.drop(col,axis=1)
-		dataframe=dataframe.join(enc)
-	return dataframe
+    copy = dataframe.copy()
+    new_df = None
+    for col in columns_to_encode:
+        enc = pd.get_dummies(dataframe[col],prefix=col)
+        if(new_df is None):
+            new_df = enc
+        else:
+            new_df = new_df.join(enc)
+        dataframe = dataframe.drop(col,axis=1)
+        #dataframe=dataframe.join(enc)
+    return dataframe.join(new_df)
 
 def ConvertLabelsToZeroOne(data, positive_class_label):
 	labels_raw = np.array(data)
