@@ -18,7 +18,6 @@ from sklearn.feature_selection import mutual_info_classif,SelectKBest,mutual_inf
 from sklearn.model_selection import GridSearchCV, ParameterGrid
 from sklearn.neural_network import MLPClassifier
 import time
-import SupervisedLearning as sl
 from sklearn.model_selection import train_test_split
 from sklearn import cluster
 from scipy.spatial import distance
@@ -903,79 +902,22 @@ def compute_bic(kmeans,X):
 
 def main():
     print("running")
-    rootfolder = r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\DataSets"
-    #PlotClusteringMetricsForDimsAndDimRed(r'C:\temp\testplots_cs',pd.read_csv(r'C:\temp\testplots_cs\clustering.csv'),[2,5,10,20,30],["pca","ica","rp","mi"],[2,5,10,15,20])
-    #PlotClusteringMetricsForDimsAndDimRed(r'C:\temp\testplots_cs',pd.read_csv(r'C:\temp\testplots_cs\clustering.csv'),[2,5,10,20,30],["pca","ica","rp","mi"],[2,5,10,15,20])
-    #PlotClusteringMetrics(r'C:\temp\testplots_lr',pd.read_csv(r'C:\temp\testplots_lr\clustering.csv'))
-    #PlotClusteringMetrics(r'C:\temp\testplots_cs',pd.read_csv(r'C:\temp\testplots_cs\clustering.csv'))
-    #lrd = ReadCreditScreeningData(rootfolder)
-    #lrd = PreProcessCreditScreeningData(lrd)
-    #label_col_name = "A16"
-    #ReplaceLabelsWithIntegers(lrd,label_col_name)
-    #DoStandardScaling(lrd,lambda x : x != "label")
-    #X = lrd.loc[:,lrd.columns != label_col_name].as_matrix()
-    #Y = lrd.loc[:,lrd.columns == label_col_name]
-    #Y = np.array(Y[Y.columns[0]].values)
+    rootfolder = r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\Assignment3\skhanduja7\data"
 
-    #X,Y = ReadGeneData(rootfolder)
-    #RunExperiments(X,Y,"c:/temp/testplots_gene",[2,4,5,10,12],[2,50,100,500,1000])
-
-    #X,Y = ReadVoiceData(rootfolder)
-    #RunExperiments(X,Y,"c:/temp/testplots_voice",[2,4,5,10,12],[2,50,100,150,310])
-
-    #PlotClusteringMetricsForDimsAndDimRed(r'C:\temp\testplots_lr',pd.read_csv(r'C:\temp\testplots_lr\clustering.csv'),[2,4,8,12,16],["raw","pca","ica","rp","mi"],[2,5,10,15,26])
-    #PlotClusteringMetricsForDimsAndDimRed(r'C:\temp\testplots_cs',pd.read_csv(r'C:\temp\testplots_cs\clustering.csv'),[2,5,10,20,30],["raw","pca","ica","rp","mi"],[2,5,10,15,20])
-    #PlotClusteringMetrics(r'C:\temp\testplots_lr',pd.read_csv(r'C:\temp\testplots_lr\clustering.csv'))
-    #PlotClusteringMetrics(r'C:\temp\testplots_cs',pd.read_csv(r'C:\temp\testplots_cs\clustering.csv'))
-
-    output = r"C:\Users\shkhandu\OneDrive\Gatech\Courses\ML\Assignment3"
+    output = rootfolder
     output_lr = u.PreparePath(output + "/lr")
-    ##X,Y = ReadLetterRecognitionData(rootfolder)
-    ##RunExperiments(X,Y,output_lr,[10,15,26,35,50],[2,4,8,12,16])
-    ##PlotClusteringMetricsForDimsAndBic(output_lr,pd.read_csv(output_lr + '/clustering.csv'),[2,4,8,12,16],["raw","pca","ica","rp","mi"],[10,15,26,35,50],metrics=["bic"])
-    ##PlotClusteringMetrics(output_lr,pd.read_csv(output_lr + '/clustering.csv'),[])
+    X,Y = ReadLetterRecognitionData(rootfolder)
+    RunExperiments(X,Y,output_lr,[10,15,26,35,50],[2,4,8,12,16])
+    PlotClusteringMetricsForDimsAndBic(output_lr,pd.read_csv(output_lr + '/clustering.csv'),[2,4,8,12,16],["raw","pca","ica","rp","mi"],[10,15,26,35,50],metrics=["bic"])
+    PlotClusteringMetrics(output_lr,pd.read_csv(output_lr + '/clustering.csv'),[])
     ComputeFinalResults1(output_lr,[10,15,26,35,50],[2,4,8,12])
-    #ComputeFinalResults(output_lr)
 
     output_lr = u.PreparePath(output + "/cs")
-    #X,Y = ReadCreditScreeningData(rootfolder)
-    ##RunExperiments(X,Y,output_lr,[2,5,10,15,20],[2],True)
-    #RunExperiments(X,Y,output_lr,[2,5,10,15,20],[2,5,10,20,30],True)
-    #PlotClusteringMetricsForDimsAndBic(output_lr,pd.read_csv(output_lr + '/clustering.csv'),[2,5,10,20,30],["raw","pca","ica","rp","mi"],[2,5,10,15,20],metrics=["bic"])
-    #PlotClusteringMetrics(output_lr,pd.read_csv(output_lr + '/clustering.csv'),[])
+    X,Y = ReadCreditScreeningData(rootfolder)
+    RunExperiments(X,Y,output_lr,[2,5,10,15,20],[2,5,10,20,30],True)
+    PlotClusteringMetricsForDimsAndBic(output_lr,pd.read_csv(output_lr + '/clustering.csv'),[2,5,10,20,30],["raw","pca","ica","rp","mi"],[2,5,10,15,20],metrics=["bic"])
+    PlotClusteringMetrics(output_lr,pd.read_csv(output_lr + '/clustering.csv'),[])
     ComputeFinalResults1(output_lr,[2,5,10,15,20],[2,5,10,30,20])
-
-    #result = PerformPca(X,Y,[2,5,8,10,16],10)
-    #data = result["pca_2_data"]
-    #resuls = RunClustering(data,Y,[2],10,["kmeans","gmm"])
-    #ScatterPlot(data,Y[Y.columns[0]].values,"c:/temp/pca.png")
-    #ScatterPlot(data,resuls["kmeans"]["kmeans_2_predicted"],"c:/temp/pca.png")
-    #ScatterPlot(data,resuls["gmm"]["gmm_2_predicted"],"c:/temp/pca.png")
-
-    #result = PerformIca(X,Y,[2,5,8,10,16],10)
-    #resuls = RunClustering(result["ica_2_data"],Y,[2],10,["kmeans","gmm"])
-    #ScatterPlot(result["ica_2_data"],Y[Y.columns[0]].values,"as")
-    #ScatterPlot(result["ica_2_data"],resuls["kmeans"]["kmeans_2_predicted"],"c:/temp/pca.png")
-    #ScatterPlot(result["ica_2_data"],resuls["gmm"]["gmm_2_predicted"],"c:/temp/pca.png")
-
-    #for i in np.arange(1):
-    #    result = PerformRandomProjections(X,Y,[2,5,10,12,16],10)
-    #    data = result["rp_2_data"]
-    #    resuls = RunClustering(data,Y,[2],10,["kmeans","gmm"])
-    #    ScatterPlot(data,Y[Y.columns[0]].values,"c:/temp/pca.png")
-    #    ScatterPlot(data,resuls["kmeans"]["kmeans_2_predicted"],"c:/temp/pca.png")
-    #    ScatterPlot(data,resuls["gmm"]["gmm_2_predicted"],"c:/temp/pca.png")
-
-    #result = PerformLda(X,np.array(Y[Y.columns[0]].values,dtype=int),[2,5,8,10,16],10)
-    #data = result["lda_2_data"]
-    #resuls = RunClustering(data,Y,[2],10,["kmeans","gmm"])
-    #ScatterPlot(data,Y[Y.columns[0]].values,"c:/temp/pca.png")
-    #ScatterPlot(data,resuls["kmeans"]["kmeans_2_predicted"],"c:/temp/pca.png")
-    #ScatterPlot(data,resuls["gmm"]["gmm_2_predicted"],"c:/temp/pca.png")
-
-    #RunKMeansOnCreditScreeningDataset(rootfolder)
-    #RunKMeansOnVowelRecognitionDataset(rootfolder)
-    #RunKMeansOnLetterRecognitionDataset(rootfolder)
 
 if __name__ == "__main__":
     main()

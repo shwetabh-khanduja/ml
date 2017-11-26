@@ -311,6 +311,12 @@ def GetMarkerColorCombinations(seed = 0):
     random.shuffle(combinations)
     return combinations
 
+def GetAllMarkers():
+    """
+    Currently max markers available are 11
+    """
+    return ['o','x','d','^','+','v','8','s','p','>','<']
+
 def GetColorCombinations(seed = 0):
     grid = ParameterGrid([{'color':['orange','red','blue','green','black','saddlebrown','violet','darkcyan','maroon','lightcoral']}])
     combinations = [p for p in grid]
