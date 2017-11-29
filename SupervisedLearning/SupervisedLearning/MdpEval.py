@@ -116,10 +116,23 @@ def ComputeDiffInOptimalValueForMdp(mdp_folder, gammas, vi_file,pi_file, adjustF
         for key in gammas:
             line = "{0},{1}".format(key, diffs[key])
             lines.append(line)
-        u.WriteTextArrayToFile(mdp_folder+"/_value_diff.csv",lines)
+        u.WriteTextArrayToFile(mdp_folder+"/value_diff.csv",lines)
     return diffs
 
 def ComputeDiffInVI_PI_Q(rootFolder):
+    output = rootFolder+"/pi_q_comparison.csv"
+    pi_file = rootFolder+"/LargeMdpRwTraps50/0.99/pi_10000.policy.csv"
+    q_file = rootFolder+"/LargeMdpRwTraps50/0.99/ql_10000_alpha=1.0_po=boltzmann_p=100.0.policy.csv"
+    diff = ComparePolicies(pi_file,q_file)
+    lines = []
+    lines.append("LargeMdp,"+str(diff))
+    pi_file = rootFolder+"/SmallMdpRwTraps/0.99/pi_10000.policy.csv"
+    q_file = rootFolder+"/SmallMdpRwTraps/0.99/ql_1000_alpha=1.0_po=greedyepsilon_p=0.1.policy.csv"
+    diff = ComparePolicies(pi_file,q_file)
+    lines.append("SmallMdp,"+str(diff))
+    u.WriteTextArrayToFile(output,lines)
+
+def ComputeDiffInVI_PI_Q_1(rootFolder):
     output = rootFolder+"/pi_q_comparison.csv"
     rootFolder1 = r"C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/Assignment4/OutputNew1"
     pi_file = rootFolder1+"/LargeMdpRwTraps50/0.99/pi_10000.policy.csv"
@@ -200,26 +213,37 @@ def PlotPiViConvergenceForSmallAndLargeMdp(outputfolder,datafile,gamma):
     outputfile = u.PreparePath(outputfolder+"/plots/small_value_gamma="+str(gamma)+".png")
     u.SaveDataPlotWithLegends(ser1,filename=outputfile,x_axis_name="iterations",y1_axis_name="Total value accross states")
 
+def Evaluate(rootFolder):
+    ConcatenateOutputFiles(rootFolder)
+    ComputeDiffInOptimalPolicyForMdp(rootFolder+"/"+"LargeMdpRwTraps50",[0.99,0.95,0.90,0.80],"vi.policy.csv","pi_10000.policy.csv",True,True)
+    ComputeDiffInOptimalPolicyForMdp(rootFolder+"/"+"SmallMdpRwTraps",[0.99,0.95,0.90,0.80],"vi.policy.csv","pi_10000.policy.csv",True,True)
 
-def main():
-    rootFolder = r"C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/Assignment4/OutputNew3"
-    #ComputeDiffInVI_PI_Q(rootFolder)
-    #ComparePolicies(rootFolder+"/LargeMdpRwTraps50/0.99/pi_1.policy.csv",rootFolder+"/LargeMdpRwTraps50/0.99/pi_10000.policy.csv")
-    #ComputeDiffInOptimalValueForMdp(rootFolder+"/"+"LargeMdpRwTraps50",[0.99,0.95,0.90,0.80],"vi.policy.csv","pi_10000.policy.csv",True,True)
-    #ComputeDiffInOptimalValueForMdp(rootFolder+"/"+"SmallMdpRwTraps",[0.99,0.95,0.90,0.80],"vi.policy.csv","pi_10000.policy.csv",True,True)
-    #ConcatenateOutputFiles(rootFolder) # step 1
-    PlotPiViConvergenceForSmallAndLargeMdp(rootFolder,rootFolder+"/all_outputs.csv",0.99) # step 2
-    PlotPiViConvergenceForSmallAndLargeMdp(rootFolder,rootFolder+"/all_outputs.csv",0.95) # step 2
-    PlotPiViConvergenceForSmallAndLargeMdp(rootFolder,rootFolder+"/all_outputs.csv",0.9) # step 2
-    PlotPiViConvergenceForSmallAndLargeMdp(rootFolder,rootFolder+"/all_outputs.csv",0.8) # step 2
+    PlotPiViConvergenceForSmallAndLargeMdp(rootFolder,rootFolder+"/all_outputs.csv",0.99)
+    PlotPiViConvergenceForSmallAndLargeMdp(rootFolder,rootFolder+"/all_outputs.csv",0.95)
+    PlotPiViConvergenceForSmallAndLargeMdp(rootFolder,rootFolder+"/all_outputs.csv",0.9)
+    PlotPiViConvergenceForSmallAndLargeMdp(rootFolder,rootFolder+"/all_outputs.csv",0.8)
+
+    #per iteration metrics for large mdp
     mdpFolder = rootFolder+"/"+"LargeMdpRwTraps50"
     outputfile = mdpFolder + "/output.csv"
     data = pd.read_csv(outputfile)
-    PlotAvgRewardsPerEpisode(data,10000,10,mdpFolder+"/avg_reward.png","Avg Reward","ar")
-    PlotAvgRewardsPerEpisode(data,10000,10,mdpFolder+"/completion.png","Reached Goal (1/0)","goal")
-    return data
+    PlotAvgRewardsPerEpisode(data,10000,50,mdpFolder+"/avg_reward.png","Avg Reward","ar")
+    PlotAvgRewardsPerEpisode(data,10000,50,mdpFolder+"/completion.png","Reached Goal (1/0)","goal")
 
-def PlotAvgRewardsPerEpisode(data, totalpoints,points_to_sample, outputfile,y_axis_name,key_to_plot):
+    #per iteration metrics for small mdp
+    mdpFolder = rootFolder+"/"+"SmallMdpRwTraps"
+    outputfile = mdpFolder + "/output.csv"
+    data = pd.read_csv(outputfile)
+    PlotAvgRewardsPerEpisode(data,10000,20,mdpFolder+"/avg_reward.png","Avg Reward","ar",3000)
+    PlotAvgRewardsPerEpisode(data,10000,20,mdpFolder+"/completion.png","Reached Goal (1/0)","goal",3000)
+
+    ComputeDiffInVI_PI_Q(rootFolder)
+
+
+def main(rootFolder = r"C:/Users/shkhandu/OneDrive/Gatech/Courses/ML/Assignment4/OutputNew4"):
+    Evaluate(rootFolder)
+
+def PlotAvgRewardsPerEpisode(data, totalpoints,points_to_sample, outputfile,y_axis_name,key_to_plot, max_points = 100000):
     """
     cr : cum_rewards
     ar : avg_rewards
@@ -229,6 +253,7 @@ def PlotAvgRewardsPerEpisode(data, totalpoints,points_to_sample, outputfile,y_ax
     data_to_plot = u.FilterRows(data,lambda x : (x['solver'] == 'q') & (x['gamma'] == 0.99) & (x['alpha'] == 1) & (x['maxInnerVi'] == totalpoints))
     x_to_take = np.arange(totalpoints)
     x_to_take = x_to_take[x_to_take % points_to_sample == 0]
+    x_to_take = x_to_take[x_to_take < max_points]
     ser = data_to_plot.apply(lambda x : GetQRewardSeriesToPlot(x,x_to_take,key_to_plot),axis=1)
     u.SaveDataPlotWithLegends(ser.values,filename = outputfile,x_axis_name="episodes",y1_axis_name=y_axis_name)
    
